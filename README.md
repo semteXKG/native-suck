@@ -1,2 +1,3 @@
-# native-suck
-esp-idf version of the suck project which utilizes zigbee
+# What's this about
+
+The same thing as the SUCKer, but in native ESP IDF
