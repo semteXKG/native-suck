@@ -54,7 +54,6 @@
 #define MEASUREMENT_ENDPOINT            1          /* esp switch device endpoint */
 #define ESP_ZB_PRIMARY_CHANNEL_MASK     (1l << 13)  /* Zigbee primary channel mask use in the example */
 
-static const char *TAG = "ESP_ZB_GATEWAY";
 
 typedef struct device_ {
     esp_zb_ieee_addr_t ieee_addr;

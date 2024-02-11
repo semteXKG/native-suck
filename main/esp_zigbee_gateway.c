@@ -37,6 +37,8 @@
 
 #include "esp_zigbee_gateway.h"
 
+static const char* APP_TAG = "ESP_ZB_GATEWAY";
+
 measurements_t measurements = {
     .humidity = 0,
     .pm25Level = 0,
@@ -92,11 +94,11 @@ static void bind_cb(esp_zb_zdp_status_t zdo_status, void *user_ctx)
     if (zdo_status == ESP_ZB_ZDP_STATUS_SUCCESS) {
         endpointsBound++;
         if(endpointsBound < 3) {
-            ESP_LOGI(TAG, "Still waiting for endpoints!");
+            ESP_LOGI(APP_TAG, "Still waiting for endpoints!");
             return; 
         }
 
-        ESP_LOGI(TAG, "All Endpoints Bound successfully!");
+        ESP_LOGI(APP_TAG, "All Endpoints Bound successfully!");
         configureReport(device, ESP_ZB_ZCL_CLUSTER_ID_TEMP_MEASUREMENT, ESP_ZB_ZCL_ATTR_TEMP_MEASUREMENT_VALUE_ID, ESP_ZB_ZCL_ATTR_TYPE_S16);
         configureReport(device, ESP_ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT, ESP_ZB_ZCL_ATTR_REL_HUMIDITY_MEASUREMENT_VALUE_ID, ESP_ZB_ZCL_ATTR_TYPE_S16);
         configureReport(device, ESP_ZB_ZCL_CLUSTER_ID_PM2_5_MEASUREMENT, ESP_ZB_ZCL_ATTR_PM2_5_MEASUREMENT_MEASURED_VALUE_ID, ESP_ZB_ZCL_ATTR_TYPE_SINGLE);
@@ -113,45 +115,45 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
 
     switch (sig_type) {
     case ESP_ZB_ZDO_SIGNAL_SKIP_STARTUP:
-        ESP_LOGI(TAG, "Zigbee stack initialized");
+        ESP_LOGI(APP_TAG, "Zigbee stack initialized");
         esp_zb_bdb_start_top_level_commissioning(ESP_ZB_BDB_MODE_INITIALIZATION);
         break;
     case ESP_ZB_MACSPLIT_DEVICE_BOOT:
-        ESP_LOGI(TAG, "Zigbee rcp device booted");
+        ESP_LOGI(APP_TAG, "Zigbee rcp device booted");
         rcp_version = (esp_zb_zdo_signal_macsplit_dev_boot_params_t *)esp_zb_app_signal_get_params(p_sg_p);
-        ESP_LOGI(TAG, "Running RCP Version: %s", rcp_version->version_str);
+        ESP_LOGI(APP_TAG, "Running RCP Version: %s", rcp_version->version_str);
         break;
     case ESP_ZB_BDB_SIGNAL_DEVICE_FIRST_START:
     case ESP_ZB_BDB_SIGNAL_DEVICE_REBOOT:
         if (err_status == ESP_OK) {
-            ESP_LOGI(TAG, "Start network formation");
+            ESP_LOGI(APP_TAG, "Start network formation");
             esp_zb_bdb_start_top_level_commissioning(ESP_ZB_BDB_MODE_NETWORK_FORMATION);
         } else {
-            ESP_LOGE(TAG, "Failed to initialize Zigbee stack (status: %s)", esp_err_to_name(err_status));
+            ESP_LOGE(APP_TAG, "Failed to initialize Zigbee stack (status: %s)", esp_err_to_name(err_status));
         }
         break;
     case ESP_ZB_BDB_SIGNAL_FORMATION:
         if (err_status == ESP_OK) {
             esp_zb_ieee_addr_t ieee_address;
             esp_zb_get_long_address(ieee_address);
-            ESP_LOGI(TAG, "Formed network successfully (ieee_address: %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x, PAN ID: 0x%04hx, Channel:%d)",
+            ESP_LOGI(APP_TAG, "Formed network successfully (ieee_address: %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x, PAN ID: 0x%04hx, Channel:%d)",
                      ieee_address[7], ieee_address[6], ieee_address[5], ieee_address[4],
                      ieee_address[3], ieee_address[2], ieee_address[1], ieee_address[0],
                      esp_zb_get_pan_id(), esp_zb_get_current_channel());
             esp_zb_bdb_start_top_level_commissioning(ESP_ZB_BDB_MODE_NETWORK_STEERING);
         } else {
-            ESP_LOGI(TAG, "Restart network formation (status: %s)", esp_err_to_name(err_status));
+            ESP_LOGI(APP_TAG, "Restart network formation (status: %s)", esp_err_to_name(err_status));
             esp_zb_scheduler_alarm((esp_zb_callback_t)bdb_start_top_level_commissioning_cb, ESP_ZB_BDB_MODE_NETWORK_FORMATION, 1000);
         }
         break;
     case ESP_ZB_BDB_SIGNAL_STEERING:
         if (err_status == ESP_OK) {
-            ESP_LOGI(TAG, "Network steering started");
+            ESP_LOGI(APP_TAG, "Network steering started");
         }
         break;
     case ESP_ZB_ZDO_SIGNAL_DEVICE_ANNCE:
         dev_annce_params = (esp_zb_zdo_signal_device_annce_params_t *)esp_zb_app_signal_get_params(p_sg_p);
-        ESP_LOGI(TAG, "New device commissioned or rejoined (short: 0x%04hx)", dev_annce_params->device_short_addr);
+        ESP_LOGI(APP_TAG, "New device commissioned or rejoined (short: 0x%04hx)", dev_annce_params->device_short_addr);
 
 
         device_t *tempSensor = (device_t *)malloc(sizeof(device_t));
@@ -182,7 +184,7 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
 
         break;
     default:
-        ESP_LOGI(TAG, "ZDO signal: %s (0x%x), status: %s", esp_zb_zdo_signal_to_string(sig_type), sig_type,
+        ESP_LOGI(APP_TAG, "ZDO signal: %s (0x%x), status: %s", esp_zb_zdo_signal_to_string(sig_type), sig_type,
                  esp_err_to_name(err_status));
         break;
     }
@@ -191,35 +193,35 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
 static esp_err_t zb_attribute_handler(const esp_zb_zcl_set_attr_value_message_t *message)
 {
     esp_err_t ret = ESP_OK;
-    ESP_RETURN_ON_FALSE(message, ESP_FAIL, TAG, "Empty message");
-    ESP_RETURN_ON_FALSE(message->info.status == ESP_ZB_ZCL_STATUS_SUCCESS, ESP_ERR_INVALID_ARG, TAG, "Received message: error status(%d)",
+    ESP_RETURN_ON_FALSE(message, ESP_FAIL, APP_TAG, "Empty message");
+    ESP_RETURN_ON_FALSE(message->info.status == ESP_ZB_ZCL_STATUS_SUCCESS, ESP_ERR_INVALID_ARG, APP_TAG, "Received message: error status(%d)",
                         message->info.status);
-    ESP_LOGI(TAG, "Received message: endpoint(%d), cluster(0x%x), attribute(0x%x), data size(%d)", message->info.dst_endpoint, message->info.cluster,
+    ESP_LOGI(APP_TAG, "Received message: endpoint(%d), cluster(0x%x), attribute(0x%x), data size(%d)", message->info.dst_endpoint, message->info.cluster,
              message->attribute.id, message->attribute.data.size);
     return ret;
 }
 
 static esp_err_t zb_read_attr_handler(esp_zb_zcl_cmd_read_attr_resp_message_t* message) {
         esp_err_t ret = ESP_OK;
-        ESP_RETURN_ON_FALSE(message, ESP_FAIL, TAG, "Empty message");
-        ESP_RETURN_ON_FALSE(message->info.status == ESP_ZB_ZCL_STATUS_SUCCESS, ESP_ERR_INVALID_ARG, TAG, "Received message: error status(%d)",
+        ESP_RETURN_ON_FALSE(message, ESP_FAIL, APP_TAG, "Empty message");
+        ESP_RETURN_ON_FALSE(message->info.status == ESP_ZB_ZCL_STATUS_SUCCESS, ESP_ERR_INVALID_ARG, APP_TAG, "Received message: error status(%d)",
                             message->info.status);
-        ESP_LOGI(TAG, "Received message: endpoint(%d), cluster(0x%x), attribute(0x%x), data size(%d), type (%d)", message->info.dst_endpoint, message->info.cluster,
+        ESP_LOGI(APP_TAG, "Received message: endpoint(%d), cluster(0x%x), attribute(0x%x), data size(%d), type (%d)", message->info.dst_endpoint, message->info.cluster,
                 message->variables->attribute.id, message->variables->attribute.data.size, message->variables->attribute.data.type);
 
-        ESP_LOGI(TAG, "Value: %d", *(uint16_t*)message->variables->attribute.data.value);
+        ESP_LOGI(APP_TAG, "Value: %d", *(uint16_t*)message->variables->attribute.data.value);
         return ret;
 }
 
 static void printMeasurments() {
-    ESP_LOGI(TAG, "Temp: %d (%"PRIu64"); Humidity: %d (%"PRIu64"); PM25 Levels: %f (%" PRIu64 ")", 
+    ESP_LOGI(APP_TAG, "Temp: %d (%"PRIu64"); Humidity: %d (%"PRIu64"); PM25 Levels: %f (%" PRIu64 ")", 
     measurements.temperature, measurements.lastTempUpdate, 
     measurements.humidity, measurements.lastHumidityUpdate, 
     measurements.pm25Level, measurements.lastPM25Update);
 }
 
 static esp_err_t zb_report_attribute_handler(esp_zb_zcl_report_attr_message_t* message) {
-        ESP_LOGD(TAG, "Received message: endpoint(%d), cluster(0x%x), attribute(0x%x), data size(%d), type (0x%x)", message->status, message->cluster,
+        ESP_LOGD(APP_TAG, "Received message: endpoint(%d), cluster(0x%x), attribute(0x%x), data size(%d), type (0x%x)", message->status, message->cluster,
                 message->attribute.id, message->attribute.data.size, message->attribute.data.type);
         int64_t timestamp = esp_timer_get_time() / 1000;
         if (message->cluster == ESP_ZB_ZCL_CLUSTER_ID_TEMP_MEASUREMENT) {
@@ -245,16 +247,16 @@ static esp_err_t zb_report_attribute_handler(esp_zb_zcl_report_attr_message_t* m
             }
         } else {
             if(message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_S16 ) {
-                ESP_LOGI(TAG, "Value: %d", *(short*)message->attribute.data.value);
+                ESP_LOGI(APP_TAG, "Value: %d", *(short*)message->attribute.data.value);
             } else if (message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_SINGLE) {
-                ESP_LOGI(TAG, "Value: %f", *(float*)message->attribute.data.value);
+                ESP_LOGI(APP_TAG, "Value: %f", *(float*)message->attribute.data.value);
             }       
         }
         return ESP_OK;
 }
 
 static esp_err_t zb_read_config_response_handler(esp_zb_zcl_cmd_config_report_resp_message_t* message) {
-    ESP_LOGI(TAG, "Received Config Response: Status(%d), Cluster(0x%x) Attribute: (0x%x), Attribute Status (0x%x)", message->info.status, message->info.cluster, message->variables->attribute_id, message->variables->status);
+    ESP_LOGI(APP_TAG, "Received Config Response: Status(%d), Cluster(0x%x) Attribute: (0x%x), Attribute Status (0x%x)", message->info.status, message->info.cluster, message->variables->attribute_id, message->variables->status);
     return ESP_OK;
 }
 
@@ -262,12 +264,12 @@ static void logDiscoveredAttribute(esp_zb_zcl_disc_attr_variable_t* attribute) {
     if (!attribute) {
         return ;
     }
-    ESP_LOGI(TAG, "ID (0x%x), Type: (0x%x)", attribute->attr_id, attribute->data_type);
+    ESP_LOGI(APP_TAG, "ID (0x%x), Type: (0x%x)", attribute->attr_id, attribute->data_type);
     logDiscoveredAttribute(attribute->next);
 }
 
 static esp_err_t zb_disc_attr_handler(esp_zb_zcl_cmd_discover_attributes_resp_message_t* message) {
-    ESP_LOGI(TAG, "Received Attribute Discover: Status: %s", esp_err_to_name(message->info.status));
+    ESP_LOGI(APP_TAG, "Received Attribute Discover: Status: %s", esp_err_to_name(message->info.status));
     logDiscoveredAttribute(message->variables);
     return ESP_OK;
 }
@@ -292,7 +294,7 @@ static esp_err_t zb_action_handler(esp_zb_core_action_callback_id_t callback_id,
         ret = zb_disc_attr_handler((esp_zb_zcl_cmd_discover_attributes_resp_message_t*) message);
         break;
     default:
-        ESP_LOGW(TAG, "Receive Zigbee action(0x%x) callback", callback_id);
+        ESP_LOGW(APP_TAG, "Receive Zigbee action(0x%x) callback", callback_id);
         break;
     }
     return ret;
@@ -351,12 +353,5 @@ void zigbee_start()
     };
     /* load Zigbee gateway platform config to initialization */
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
-    ESP_ERROR_CHECK(nvs_flash_init());
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-#if CONFIG_EXAMPLE_CONNECT_WIFI
-    ESP_ERROR_CHECK(example_connect());
-    ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
-#endif
     xTaskCreate(esp_zb_task, "Zigbee_main", 4096, NULL, 5, NULL);
 }
