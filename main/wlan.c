@@ -74,7 +74,7 @@ void wifi_init_sta(void)
             .threshold.authmode = ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD,
             .sae_pwe_h2e = ESP_WIFI_SAE_MODE,
             .sae_h2e_identifier = EXAMPLE_H2E_IDENTIFIER,
-      
+    
         },
     };
 
