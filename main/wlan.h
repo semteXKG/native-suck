@@ -1,5 +1,4 @@
-#ifndef wlan
-#define wlan
+#pragma once
 
 #include <string.h>
 #include "freertos/FreeRTOS.h"
@@ -16,5 +15,3 @@
 #include "lwip/sys.h"
 
 void wlan_start();
-
-#endif

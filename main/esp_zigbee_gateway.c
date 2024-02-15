@@ -39,15 +39,6 @@
 
 static const char* APP_TAG = "ESP_ZB_GATEWAY";
 
-measurements_t measurements = {
-    .humidity = 0,
-    .pm25Level = 0,
-    .temperature = 0,
-    .lastHumidityUpdate = 0,
-    .lastPM25Update = 0,
-    .lastTempUpdate = 0
-};
-
 bind_ctx_t g_bind_ctx = {};
 device_t g_device = {};
 uint16_t g_clusters[3] = {
@@ -213,7 +204,7 @@ static esp_err_t zb_read_attr_handler(esp_zb_zcl_cmd_read_attr_resp_message_t* m
         return ret;
 }
 
-static void printMeasurments() {
+static void printMeasurments(measurements_t measurements) {
     ESP_LOGI(APP_TAG, "Temp: %d (%"PRIu64"); Humidity: %d (%"PRIu64"); PM25 Levels: %f (%" PRIu64 ")", 
     measurements.temperature, measurements.lastTempUpdate, 
     measurements.humidity, measurements.lastHumidityUpdate, 
@@ -224,26 +215,27 @@ static esp_err_t zb_report_attribute_handler(esp_zb_zcl_report_attr_message_t* m
         ESP_LOGD(APP_TAG, "Received message: endpoint(%d), cluster(0x%x), attribute(0x%x), data size(%d), type (0x%x)", message->status, message->cluster,
                 message->attribute.id, message->attribute.data.size, message->attribute.data.type);
         int64_t timestamp = esp_timer_get_time() / 1000;
+        measurements_t measurements = getMeasurements();
         if (message->cluster == ESP_ZB_ZCL_CLUSTER_ID_TEMP_MEASUREMENT) {
             short value = *(short*)message->attribute.data.value / 100;
             if (measurements.temperature != value) {
                 measurements.temperature = value;
                 measurements.lastTempUpdate = timestamp;
-                printMeasurments();
+                printMeasurments(measurements);
             }
         } else if (message->cluster == ESP_ZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT) {
             short value = *(short*)message->attribute.data.value / 100;
             if (measurements.humidity != value) {
                 measurements.humidity = value;
                 measurements.lastHumidityUpdate = timestamp;
-                printMeasurments();
+                printMeasurments(measurements);
             }
         } else if (message->cluster == ESP_ZB_ZCL_CLUSTER_ID_PM2_5_MEASUREMENT) {
             float value = *(float*)message->attribute.data.value;
             if (measurements.pm25Level != value) {
                 measurements.pm25Level = value;
                 measurements.lastPM25Update = timestamp;
-                printMeasurments();
+                printMeasurments(measurements);
             }
         } else {
             if(message->attribute.data.type == ESP_ZB_ZCL_ATTR_TYPE_S16 ) {
@@ -252,6 +244,7 @@ static esp_err_t zb_report_attribute_handler(esp_zb_zcl_report_attr_message_t* m
                 ESP_LOGI(APP_TAG, "Value: %f", *(float*)message->attribute.data.value);
             }       
         }
+        setMeasurements(measurements);
         return ESP_OK;
 }
 

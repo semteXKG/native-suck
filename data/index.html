@@ -21,13 +21,14 @@
                     success: function (data) {
                         $("#operationMode").html(data["mode"]);
                         $("#operationStatus").html(data["machineStatus"]);
-                        $("#pmSensors25").html(Number(data["pmSensors"][1]).toFixed(2));
-                        $("#pmSensors100").html(Number(data["pmSensors"][2]).toFixed(2));
+                        $("#pmSensors25").html(Number(data["pmSensor"]).toFixed(2));
+                        $("#temperature").html(Number(data["temperature"])+"C");
+                        $("#humidity").html(Number(data["humidity"])+"%");
                       }
                 });
             }  
             updateData();
-            setInterval(updateData, 5000); // 5 * 100 miliseconds
+            setInterval(updateData, 1000); // 5 * 100 miliseconds
         });
     </script>
 </head>
@@ -46,7 +47,10 @@
               <span>PM2.5:</span> <b><span id="pmSensors25">LOADING</span></b>
             </p>
             <p class="substate">
-              <span>PM10: </span> <span id="pmSensors100">LOADING</span>
+              <span>Temperature:</span> <b><span id="temperature">LOADING</span></b>
+            </p>
+            <p class="substate">
+              <span>Humidity:</span> <b><span id="humidity">LOADING</span></b>
             </p>
           </p>      
         </div>
@@ -55,7 +59,6 @@
             <p class="card-title"><i class="fas fa-cogs"></i> Manual Override</p>
             <p>
               <button class="button-on" onclick="sendRequest('operation/on_low')">Low</button>
-              <button class="button-on" onclick="sendRequest('operation/on_mid')">Middle</button>
               <button class="button-on" onclick="sendRequest('operation/on_high')">High</button>
               <button class="button-on" onclick="sendRequest('operation/off')">Off</button>
             </p>

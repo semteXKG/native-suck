@@ -34,7 +34,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef ZIGBEE_GATEWAY
+#pragma once
 #include "esp_err.h"
 #include "esp_zigbee_core.h"
 #include <string.h>
@@ -47,6 +47,7 @@
 #include "esp_check.h"
 #include "esp_timer.h"
 #include <inttypes.h>
+#include "state.h"
 
 /* Zigbee Configuration */
 #define MAX_CHILDREN                    10          /* the max amount of connected devices */
@@ -68,15 +69,6 @@ typedef struct bind_ctx_s {
     uint16_t cluster_id;
 } bind_ctx_t;
 
-typedef struct measurments_ {
-    short temperature;
-    short humidity;
-    float pm25Level;
-
-    int64_t lastTempUpdate;
-    int64_t lastHumidityUpdate;
-    int64_t lastPM25Update;
-} measurements_t;
 
 #define ESP_ZB_ZC_CONFIG()                                                              \
     {                                                                                   \
@@ -120,6 +112,3 @@ typedef struct measurments_ {
     }
 
 void zigbee_start();
-
-#endif
-#define ZIGBEE_GATEWAY

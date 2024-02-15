@@ -1,5 +1,4 @@
-#ifndef webserver
-#define webserver
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,6 +10,5 @@
 #include <esp_http_server.h>
 #include "esp_spiffs.h"
 #include "esp_log.h"
+#include "state.h"
 void webserver_start();
-
-#endif
