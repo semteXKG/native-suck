@@ -61,9 +61,26 @@
               <button class="button-on" onclick="sendRequest('operation/on_low')">Low</button>
               <button class="button-on" onclick="sendRequest('operation/on_high')">High</button>
               <button class="button-on" onclick="sendRequest('operation/off')">Off</button>
+              <button class="button-on" onclick="sendRequest('operation/auto')">Auto</button>
             </p>
+        </div>
+        <div class="card">
+            <p class="card-title"><i class="fas fa-cogs"></i> Limits</p>
+            <form method="post">
+              <p class="state">
+                Set to LOW after: <br/>
+                <input type="text" name="low" size="5"/>
+              </p>
+              <p class="state">
+                Set to HIGH after: <br/> 
+                <input type="text" name="high" size="5" />
+              </p>
+              <p>
+                <input type="submit" value="Save"/>
+              </p>
+            </form>
           </div>
-      </div>
+        </div>
     </div>
   </body>
 </html>

@@ -18,7 +18,7 @@ typedef struct measurments_ {
 
 enum OpMode {
     LOCAL,
-    SENSOR,
+    AUTO,
     API
 };
 

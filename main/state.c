@@ -1,10 +1,11 @@
 #include "state.h"
 #include "esp_log.h"
+#include "relay_controller.h"
 
 static const char* LOG = "STATE";
 
-enum MachineStatus status = OFF;
-enum OpMode opMode = LOCAL;
+enum MachineStatus status;
+enum OpMode opMode;
 measurements_t measurements = {
     .humidity = 0,
     .pm25Level = 0,
@@ -28,6 +29,7 @@ void setStatus(enum MachineStatus newStatus) {
     }
     
     ESP_LOGI(LOG, "Switching Status: %s -> %s", MachineStatusStr[status], MachineStatusStr[newStatus]);
+    handleStateChange(newStatus);
     status = newStatus;
 }
 
@@ -42,6 +44,27 @@ measurements_t getMeasurements() {
     return measurements;
 }
 
+void update_state_for_pm_25(float air_quality) {
+    if (air_quality > 40) {
+        setStatus(ON_HIGH);
+    } else if(air_quality >  20) {
+        setStatus(ON_LOW);
+    } else 
+    setStatus(OFF);
+}
+
 void setMeasurements(measurements_t new_measurments) {
     measurements = new_measurments;
+    if(opMode == AUTO) {
+        update_state_for_pm_25(measurements.pm25Level);
+    }
+}
+
+void advanceOpMode() {
+    setOpMode((opMode+1) % 3);
+}
+
+void advanceStatus() {
+    setStatus((status+1) % 3);
+    handleStateChange(status);
 }

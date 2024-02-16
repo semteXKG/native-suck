@@ -1,4 +1,16 @@
 dependencies:
+  espressif/button:
+    component_hash: 1f5297fe16f0ee988dbb14b6f4c91782fe2baf85025bb15cc1e0093edd3fb2ee
+    source:
+      service_url: https://api.components.espressif.com/
+      type: service
+    version: 3.2.0
+  espressif/cmake_utilities:
+    component_hash: 351350613ceafba240b761b4ea991e0f231ac7a9f59a9ee901f751bddc0bb18f
+    source:
+      service_url: https://api.components.espressif.com/
+      type: service
+    version: 0.5.3
   espressif/esp-zboss-lib:
     component_hash: a9e17babb2d43edc4bb6bc320f88560860122ac97e8fd72d7d5d9b3cd1578607
     source:
@@ -16,6 +28,6 @@ dependencies:
     source:
       type: idf
     version: 5.1.2
-manifest_hash: d14461da7b7e3310e066c38bc7de9f8c6a2525c30b543064059aab7af6be8015
+manifest_hash: 87579641865b20372fc2dafa8cb3a2af3d236719bbac24e829332358bc5091e3
 target: esp32c6
 version: 1.0.0

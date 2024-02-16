@@ -88,10 +88,15 @@ esp_err_t get_css_req_handler(httpd_req_t *req) {
 esp_err_t get_operation_low_high_handler(httpd_req_t * req) {
     if(strcmp("low", req->user_ctx) == 0) {
         setStatus(ON_LOW);
+        setOpMode(API);
     } else if (strcmp("high", req->user_ctx) == 0) {
         setStatus(ON_HIGH);
-    } else {
+        setOpMode(API);
+    } else if (strcmp("off", req->user_ctx) == 0) {
         setStatus(OFF);
+        setOpMode(API);
+    } else if (strcmp ("auto", req->user_ctx) == 0) {
+        setOpMode(AUTO);
     }
 
     httpd_resp_set_status(req, "302 Temporary Redirect");
@@ -128,6 +133,14 @@ httpd_uri_t uri_get_operation_off = {
     .user_ctx = "off"
 };
 
+httpd_uri_t uri_get_operation_auto = {
+    .uri = "/operation/auto",
+    .method = HTTP_GET,
+    .handler = get_operation_low_high_handler,
+    .user_ctx = "auto"
+};
+
+
 httpd_uri_t uri_get_style = {
     .uri = "/style.css",
     .method = HTTP_GET,
@@ -158,7 +171,8 @@ httpd_handle_t setup_server(void)
         httpd_register_uri_handler(server, &uri_get_operation_low);
         httpd_register_uri_handler(server, &uri_get_operation_high);
         httpd_register_uri_handler(server, &uri_get_operation_off);
-        httpd_register_uri_handler(server, &uri_get_style);      
+        httpd_register_uri_handler(server, &uri_get_operation_auto);
+        httpd_register_uri_handler(server, &uri_get_style);           
         httpd_register_uri_handler(server, &uri_get_wild);
     }
 
