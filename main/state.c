@@ -1,6 +1,7 @@
 #include "state.h"
 #include "esp_log.h"
 #include "relay_controller.h"
+#include "nvs_store.h"
 
 static const char* LOG = "STATE";
 
@@ -45,9 +46,9 @@ measurements_t getMeasurements() {
 }
 
 void update_state_for_pm_25(float air_quality) {
-    if (air_quality > 40) {
+    if (air_quality >= get_high_limit()) {
         setStatus(ON_HIGH);
-    } else if(air_quality >  20) {
+    } else if(air_quality >= get_low_limit()) {
         setStatus(ON_LOW);
     } else 
     setStatus(OFF);

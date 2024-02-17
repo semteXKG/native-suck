@@ -2,8 +2,6 @@
 
 #include "constants.h"
 
-
-
 void setOpMode(enum OpMode opMode);
 void setStatus(enum MachineStatus status);
 const char* getOpModeString();

@@ -53,7 +53,7 @@ static void bdb_start_top_level_commissioning_cb(uint8_t mode_mask)
 }
 
 
-static void configureReport(device_t* device, esp_zb_zcl_cluster_id_t cluster, u_int16_t attributeId, esp_zb_zcl_attr_type_t attrType) {
+static void configureReport(device_t* device, esp_zb_zcl_cluster_id_t cluster, uint16_t attributeId, esp_zb_zcl_attr_type_t attrType) {
         int reportableChange = 1;
         esp_zb_zcl_config_report_record_t record1 = {
           .attributeID = attributeId,

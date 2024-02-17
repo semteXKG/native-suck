@@ -6,8 +6,8 @@
 gpio_num_t mode_selector, status_selector;
 
 static const char* TAG = "BUTTON_CONTROLLER";
-static const u_int8_t STATUS = 0;
-static const u_int8_t MODE = 1;
+static const uint8_t STATUS = 0;
+static const uint8_t MODE = 1;
 
 button_config_t createConfig(gpio_num_t pin) {
     button_config_t btn_cfg = {
@@ -22,7 +22,7 @@ button_config_t createConfig(gpio_num_t pin) {
 }
 
 static void button_pressed(void *button_handle, void *usr_data) {
-    u_int8_t* data = (u_int8_t*) usr_data;
+    uint8_t* data = (uint8_t*) usr_data;
     switch (*data) {
         case MODE:
             ESP_LOGI(TAG, "MODE touched");

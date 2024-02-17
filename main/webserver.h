@@ -11,4 +11,5 @@
 #include "esp_spiffs.h"
 #include "esp_log.h"
 #include "state.h"
+#include "nvs_store.h"
 void webserver_start();
