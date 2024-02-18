@@ -7,6 +7,7 @@
 #include "relay_controller.h"
 #include "button_controller.h"
 #include "nvs_store.h"
+#include "display.h"
 
 void app_main(void)
 {
@@ -23,4 +24,5 @@ void app_main(void)
     wlan_start();
     zigbee_start();    
     webserver_start();
+    display_start();
 }
