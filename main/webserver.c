@@ -3,7 +3,7 @@
 #include "state.h"
 
 static const char* TAG = "WEBSERVER";
-#define BUF_SIZE 5192
+#define BUF_SIZE 8192
 #define INDEX_HTML_PATH "/spiffs/index.html"
 char response_data[8192];
 static const char* status_template = "{ \"mode\": \"%s\", \"machineStatus\": \"%s\", \"temperature\": %d, \"humidity\": %d, \"pmSensor\": %f }";
@@ -63,7 +63,7 @@ esp_err_t send_web_page(httpd_req_t *req)
 
     ESP_LOGI(TAG, "Serving Website %s", filename);  
     if(readFile(req->uri, buffer, &bytesRead) == ESP_OK) {
-        if(strstr(req->uri, "index.html")) {
+        if(strstr(req->uri, "index.html") || strcmp(req->uri, "/") == 0) {
             char newBuffer[BUF_SIZE];
             int written = sprintf(newBuffer, buffer, get_low_limit(), get_high_limit(), get_wlan_ap(), get_wlan_pass());
             return httpd_resp_send(req, newBuffer, written);
@@ -89,6 +89,11 @@ esp_err_t get_status_req_handler(httpd_req_t *req) {
 
 esp_err_t get_css_req_handler(httpd_req_t *req) {
     httpd_resp_set_type(req, "text/css");
+    return send_web_page(req);
+}
+
+esp_err_t get_png_req_handler(httpd_req_t *req) {
+    httpd_resp_set_type(req, "text/png");
     return send_web_page(req);
 }
 
@@ -152,6 +157,7 @@ void handle_credentials(char* buffer) {
 
     ESP_LOGI(TAG, "New Credentials: %s - %s", ap_name, password);
     set_wlan_credentials(ap_name, password);    
+    esp_restart();
 }
 
 esp_err_t post_handler(httpd_req_t * req) {
@@ -237,6 +243,13 @@ httpd_uri_t uri_get_style = {
     .user_ctx = NULL
 };
 
+httpd_uri_t uri_get_png = {
+    .uri = "/favicon.png",
+    .method = HTTP_GET,
+    .handler = get_png_req_handler,
+    .user_ctx = NULL
+};
+
 httpd_uri_t uri_get_wild = {
     .uri = "/*",
     .method = HTTP_GET,
@@ -264,10 +277,10 @@ httpd_handle_t setup_server(void)
         httpd_register_uri_handler(server, &uri_get_operation_high);
         httpd_register_uri_handler(server, &uri_get_operation_off);
         httpd_register_uri_handler(server, &uri_get_operation_auto);
-        httpd_register_uri_handler(server, &uri_get_style);           
+        httpd_register_uri_handler(server, &uri_get_style);
+        httpd_register_uri_handler(server, &uri_get_png);           
         httpd_register_uri_handler(server, &uri_get_wild);
     }
-
     return server;
 }
 

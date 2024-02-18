@@ -73,6 +73,7 @@ void set_limit(uint16_t low_limit, uint16_t high_limit) {
     writeInt(HIGH_LIMIT, high_limit);
     cached_low_limit = low_limit;
     cached_high_limit = high_limit;
+    nvs_commit(my_handle);
 }
 
 uint16_t get_low_limit() {
@@ -88,6 +89,7 @@ void set_wlan_credentials(char* ap_name, char* password) {
     writeString(PASSWORD, password);
     strcpy(cached_ap_name, ap_name);
     strcpy(cached_password, password);
+    nvs_commit(my_handle);
 }
 
 char* get_wlan_ap(){
