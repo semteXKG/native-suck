@@ -15,7 +15,7 @@
 #include "esp_log.h"
 #include "lvgl.h"
 #include "esp_lvgl_port.h"
-
+#include "state.h"
 
 #include "esp_lcd_panel_vendor.h"
 
@@ -43,44 +43,74 @@ static const char *TAG = "example";
 static int16_t col_dsc[] = {42, 42, 43, LV_GRID_TEMPLATE_LAST};
 static int16_t row_dsc[] = {8, 8, 8, LV_GRID_TEMPLATE_LAST};
 
-void example_lvgl_demo_ui(lv_disp_t *disp)
-{
-     /*Create a container with grid*/
-    lv_obj_t * cont = lv_obj_create(lv_disp_get_scr_act(disp));
-    lv_obj_set_style_grid_column_dsc_array(cont, col_dsc, 0);
-    lv_obj_set_style_grid_row_dsc_array(cont, row_dsc, 0);
-    lv_obj_set_size(cont, lv_pct(100), lv_pct(100));
-    lv_obj_align(cont, LV_ALIGN_TOP_MID, 0, 0);
-    lv_obj_set_layout(cont, LV_LAYOUT_GRID);
+char temp[10];
+char hum[10];
+char ppm[20];
+char centerText[30];
+char ip_address[30];
+lv_obj_t *tmp_label;
+lv_obj_t *hum_label;
+lv_obj_t *ppm_label;
+lv_obj_t *status_label;
+lv_obj_t *opmode_label;
+lv_obj_t *ip_address_label;
 
-    lv_obj_t * label;
-    lv_obj_t * obj;
+static void periodic_timer_callback(void* arg) {
+    lvgl_port_lock(0);
 
-    uint32_t i;
-    for(i = 0; i < 9; i++) {
-        uint8_t col = i % 3;
-        uint8_t row = i / 3;
+    measurements_t measurements = getMeasurements();
+    sprintf(temp, "%d°C", measurements.temperature);
+    sprintf(hum, "%d%%", measurements.humidity);
+    sprintf(ppm, "%.1f", measurements.pm25Level);
 
-        label = lv_label_create(cont);
-        lv_label_set_text_fmt(label, "%ld", i);
-        lv_obj_center(label);
-
-        /*Stretch the cell horizontally and vertically too
-         *Set span to 1 to make the cell 1 column/row sized*/
-        lv_obj_set_grid_cell(label, LV_GRID_ALIGN_STRETCH, col, 1,
-                             LV_GRID_ALIGN_STRETCH, row, 1);
-    }
+    lv_label_set_text(tmp_label, temp);
+    lv_label_set_text(hum_label, hum);
+    lv_label_set_text(ppm_label, ppm);
+    
+    strcpy(centerText, getOpModeString());
+    strcat(centerText, " - ");
+    strcat(centerText, getStatusString());
+    
+    lv_label_set_text(status_label, centerText);
+    
+    strcpy(ip_address, "10.0.0.1");
+    lv_label_set_text(ip_address_label, ip_address);
+    lvgl_port_unlock();
 }
 
 void example_lvgl_demo_ui2(lv_disp_t *disp)
 {
-        lv_obj_t *scr = lv_disp_get_scr_act(disp);
-    lv_obj_t *label = lv_label_create(scr);
-    lv_label_set_long_mode(label, LV_LABEL_LONG_SCROLL_CIRCULAR); /* Circular scroll */
-    lv_label_set_text(label, "Hello Espressif, Hello LVGL.");
-    /* Size of the screen (if you use rotation 90 or 270, please set disp->driver->ver_res) */
-    lv_obj_set_width(label, disp->driver->hor_res);
-    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 0);
+    measurements_t measurements = getMeasurements();
+    sprintf(temp, "%d°C", measurements.temperature);
+    sprintf(hum, "%d%%", measurements.humidity);
+    sprintf(ppm, "%.1f", measurements.pm25Level);
+
+    lv_obj_t *scr = lv_disp_get_scr_act(disp);
+    tmp_label = lv_label_create(scr);
+    lv_label_set_text(tmp_label, temp);
+    lv_obj_align(tmp_label, LV_ALIGN_TOP_LEFT, 0, 0);
+
+    hum_label = lv_label_create(scr);
+    lv_label_set_text(hum_label, hum);
+    lv_obj_align(hum_label, LV_ALIGN_TOP_RIGHT, 0, 0);
+
+    ppm_label = lv_label_create(scr);
+    lv_label_set_text(ppm_label, ppm);
+    lv_obj_align(ppm_label, LV_ALIGN_TOP_MID, 0, 0);
+
+    strcat(centerText, getOpModeString());
+    strcat(centerText, " - ");
+    strcat(centerText, getStatusString());
+    
+    status_label = lv_label_create(scr);
+    lv_label_set_text(status_label, centerText);
+    lv_obj_align(status_label, LV_ALIGN_CENTER, 0, 0);
+
+    strcpy(ip_address, "10.0.0.1");
+    
+    ip_address_label = lv_label_create(scr);
+    lv_label_set_text(ip_address_label, ip_address);
+    lv_obj_align(ip_address_label, LV_ALIGN_BOTTOM_MID, 0, 0);
 }
 
 void display_start(void)
@@ -147,8 +177,17 @@ void display_start(void)
     ESP_LOGI(TAG, "Display LVGL Scroll Text");
     // Lock the mutex due to the LVGL APIs are not thread-safe
     if (lvgl_port_lock(0)) {
-        example_lvgl_demo_ui(disp);
+        example_lvgl_demo_ui2(disp);
         // Release the mutex
         lvgl_port_unlock();
     }
+
+    const esp_timer_create_args_t periodic_timer_args = {
+            .callback = &periodic_timer_callback,
+            .name = "periodic"
+    };
+
+    esp_timer_handle_t periodic_timer;
+    ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, 500000));
 }

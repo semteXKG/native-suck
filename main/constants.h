@@ -2,8 +2,8 @@
 
 #include <inttypes.h>
 
-static const char *OpModeStr[] = { "LOCAL", "SENSOR", "API" };
-static const char *MachineStatusStr[] = { "OFF", "ON_LOW", "ON_HIGH" };
+static const char *OpModeStr[] = { "LOC", "SNS", "API" };
+static const char *MachineStatusStr[] = { "OFF", "LOW", "HIGH" };
 
 typedef struct measurments_ {
     short temperature;
