@@ -7,6 +7,8 @@ static const char* LOG = "STATE";
 
 enum MachineStatus status;
 enum OpMode opMode;
+char ip_addr[16];
+
 measurements_t measurements = {
     .humidity = 0,
     .pm25Level = 0,
@@ -39,6 +41,14 @@ const char* getOpModeString() {
 }
 const char* getStatusString() {
     return MachineStatusStr[status];
+}
+
+const char* get_ip_address() {
+    return ip_addr;
+}
+
+void set_ip_address(char* ip_address) {
+    strcpy(ip_addr, ip_address);
 }
 
 measurements_t getMeasurements() {

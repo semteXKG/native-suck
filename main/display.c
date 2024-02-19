@@ -73,7 +73,7 @@ static void periodic_timer_callback(void* arg) {
     
     lv_label_set_text(status_label, centerText);
     
-    strcpy(ip_address, "10.0.0.1");
+    strcpy(ip_address, get_ip_address());
     lv_label_set_text(ip_address_label, ip_address);
     lvgl_port_unlock();
 }
@@ -106,7 +106,7 @@ void example_lvgl_demo_ui2(lv_disp_t *disp)
     lv_label_set_text(status_label, centerText);
     lv_obj_align(status_label, LV_ALIGN_CENTER, 0, 0);
 
-    strcpy(ip_address, "10.0.0.1");
+    strcpy(ip_address, get_ip_address());
     
     ip_address_label = lv_label_create(scr);
     lv_label_set_text(ip_address_label, ip_address);

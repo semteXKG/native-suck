@@ -92,7 +92,15 @@ esp_err_t wifi_init_sta(void)
     /* xEventGroupWaitBits() returns the bits before the call returned, hence we can test which event actually
      * happened. */
     if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s", get_wlan_ap(), get_wlan_pass());
+        esp_netif_ip_info_t ip_info;
+        esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &ip_info);
+
+        char ip_addr[16];
+        inet_ntoa_r(ip_info.ip.addr, ip_addr, 16);
+
+        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s and ip %s", get_wlan_ap(), get_wlan_pass(), ip_addr);
+        set_ip_address(ip_addr);
+
         return ESP_OK;
     } else if (bits & WIFI_FAIL_BIT) {
         ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s", get_wlan_ap(), get_wlan_pass());
@@ -124,6 +132,7 @@ void wifi_init_ap() {
 
     char ip_addr[16];
     inet_ntoa_r(ip_info.ip.addr, ip_addr, 16);
+    set_ip_address(ip_addr);
     ESP_LOGI(TAG, "Set up softAP with IP: %s", ip_addr);
 
     ESP_LOGI(TAG, "wifi_init_softap finished. SSID:'%s'", CONFIG_SSID);

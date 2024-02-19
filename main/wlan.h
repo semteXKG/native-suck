@@ -10,6 +10,7 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "nvs_store.h"
+#include "state.h"
 
 #include "lwip/inet.h"
 #include "lwip/err.h"
