@@ -2,5 +2,6 @@ key,type,encoding,value
 sucker,namespace,,
 low_limit,data,i16,20
 high_limit,data,i16,40
+afterrun,data,i16,180
 username,data,string,"la"
 password,data,string,"blub"

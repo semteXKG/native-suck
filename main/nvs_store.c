@@ -5,11 +5,13 @@
 
 #define LOW_LIMIT "low_limit"
 #define HIGH_LIMIT "high_limit"
+#define AFTERRUN_SECONDS "afterrun"
 #define AP_NAME "username"
 #define PASSWORD "password"
 
 int16_t cached_low_limit;
 int16_t cached_high_limit;
+int16_t cached_afterrun_seconds;
 
 char cached_ap_name[30];
 char cached_password[30];
@@ -59,20 +61,23 @@ void store_start() {
         cached_high_limit = DEFAULT_HIGH_LIMIT;
         readInt(LOW_LIMIT, &cached_low_limit);
         readInt(HIGH_LIMIT, &cached_high_limit);
+        readInt(AFTERRUN_SECONDS, &cached_afterrun_seconds);
         readString(AP_NAME, cached_ap_name, "");
         readString(PASSWORD, cached_password, "");
 
-        ESP_LOGI(TAG, "Read lower [%d] and higher [%d]", cached_low_limit, cached_high_limit);
+        ESP_LOGI(TAG, "Read lower [%d] and higher [%d] with afterrun [%d]", cached_low_limit, cached_high_limit, cached_afterrun_seconds);
         ESP_LOGI(TAG, "Read user [%s] with password [%s]", cached_ap_name, cached_password);
     }        
 }
 
 
-void set_limit(uint16_t low_limit, uint16_t high_limit) {
+void set_limit(uint16_t low_limit, uint16_t high_limit, uint16_t afterrun_seconds) {
     writeInt(LOW_LIMIT, low_limit);
     writeInt(HIGH_LIMIT, high_limit);
+    writeInt(AFTERRUN_SECONDS, afterrun_seconds);
     cached_low_limit = low_limit;
     cached_high_limit = high_limit;
+    cached_afterrun_seconds = afterrun_seconds;
     nvs_commit(my_handle);
 }
 
@@ -82,6 +87,10 @@ uint16_t get_low_limit() {
 
 uint16_t get_high_limit() {
     return cached_high_limit;
+}
+
+uint16_t get_afterrun_seconds() {
+    return cached_afterrun_seconds;
 }
 
 void set_wlan_credentials(char* ap_name, char* password) {

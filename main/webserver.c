@@ -65,7 +65,7 @@ esp_err_t send_web_page(httpd_req_t *req)
     if(readFile(req->uri, buffer, &bytesRead) == ESP_OK) {
         if(strstr(req->uri, "index.html") || strcmp(req->uri, "/") == 0) {
             char newBuffer[BUF_SIZE];
-            int written = sprintf(newBuffer, buffer, get_low_limit(), get_high_limit(), get_wlan_ap(), get_wlan_pass());
+            int written = sprintf(newBuffer, buffer, get_low_limit(), get_high_limit(), get_afterrun_seconds(), get_wlan_ap(), get_wlan_pass());
             return httpd_resp_send(req, newBuffer, written);
         } else {
             return httpd_resp_send(req, buffer, bytesRead);
@@ -119,7 +119,7 @@ esp_err_t get_operation_low_high_handler(httpd_req_t * req) {
 void handle_limits(char* buffer) {
     char *outer, *inner;    
     char* token = strtok_r(buffer, "&", &outer);
-    uint16_t lower = 0, upper = 0; 
+    uint16_t lower = 0, upper = 0, afterrun_seconds = 0;
 
     while(token != NULL) {
         char *key_value_pair = strtok_r(token, "=", &inner);
@@ -129,12 +129,15 @@ void handle_limits(char* buffer) {
         } else if (strcmp(key_value_pair, "high") == 0) {
             key_value_pair = strtok_r(NULL, "=", &inner);
             upper = atoi(key_value_pair);
+        }  else if (strcmp(key_value_pair, "afterrun_seconds") == 0) {
+            key_value_pair = strtok_r(NULL, "=", &inner);
+            afterrun_seconds = atoi(key_value_pair);
         }
         token = strtok_r(NULL, "&", &outer);
     }
 
-    ESP_LOGI(TAG, "New limits: %d - %d", lower, upper);
-    set_limit(lower, upper);    
+    ESP_LOGI(TAG, "New limits: %d - %d - %ds", lower, upper, afterrun_seconds);
+    set_limit(lower, upper, afterrun_seconds);    
 }
 
 void handle_credentials(char* buffer) {

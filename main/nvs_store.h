@@ -9,9 +9,11 @@
 #include "esp_log.h"
 #include "string.h"
 
-void set_limit(uint16_t lowLimit, uint16_t highLimit);
+void set_limit(uint16_t low_limit, uint16_t high_limit, uint16_t afterrun_seconds);
 uint16_t get_low_limit();
 uint16_t get_high_limit();
+uint16_t get_afterrun_seconds();
+
 
 void set_wlan_credentials(char* ap_name, char* password);
 char* get_wlan_ap();
