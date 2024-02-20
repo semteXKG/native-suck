@@ -70,7 +70,6 @@ static void periodic_timer_callback(void* arg) {
     strcpy(centerText, getOpModeString());
     strcat(centerText, " - ");
     strcat(centerText, getStatusString());
-    
     lv_label_set_text(status_label, centerText);
     
     strcpy(ip_address, get_ip_address());
@@ -78,7 +77,7 @@ static void periodic_timer_callback(void* arg) {
     lvgl_port_unlock();
 }
 
-void example_lvgl_demo_ui2(lv_disp_t *disp)
+void create_ui_components(lv_disp_t *disp)
 {
     measurements_t measurements = getMeasurements();
     sprintf(temp, "%d°C", measurements.temperature);
@@ -104,6 +103,8 @@ void example_lvgl_demo_ui2(lv_disp_t *disp)
     
     status_label = lv_label_create(scr);
     lv_label_set_text(status_label, centerText);
+    lv_obj_set_style_text_font(status_label, &lv_font_montserrat_22, LV_PART_MAIN);
+
     lv_obj_align(status_label, LV_ALIGN_CENTER, 0, 0);
 
     strcpy(ip_address, get_ip_address());
@@ -177,7 +178,7 @@ void display_start(void)
     ESP_LOGI(TAG, "Display LVGL Scroll Text");
     // Lock the mutex due to the LVGL APIs are not thread-safe
     if (lvgl_port_lock(0)) {
-        example_lvgl_demo_ui2(disp);
+        create_ui_components(disp);
         // Release the mutex
         lvgl_port_unlock();
     }
