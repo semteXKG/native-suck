@@ -19,7 +19,7 @@
 
 #include "esp_lcd_panel_vendor.h"
 
-static const char *TAG = "example";
+static const char *TAG = "display";
 
 #define I2C_HOST  0
 
@@ -27,8 +27,8 @@ static const char *TAG = "example";
 //////////////////// Please update the following configuration according to your LCD spec //////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #define EXAMPLE_LCD_PIXEL_CLOCK_HZ    (400 * 1000)
-#define EXAMPLE_PIN_NUM_SDA           6
-#define EXAMPLE_PIN_NUM_SCL           7
+#define EXAMPLE_PIN_NUM_SDA           5
+#define EXAMPLE_PIN_NUM_SCL           6
 #define EXAMPLE_PIN_NUM_RST           -1
 #define EXAMPLE_I2C_HW_ADDR           0x3C
 
@@ -46,14 +46,17 @@ static int16_t row_dsc[] = {8, 8, 8, LV_GRID_TEMPLATE_LAST};
 char temp[10];
 char hum[10];
 char ppm[20];
+char preassure_diff[30];
 char centerText[30];
 char ip_address[30];
+
 lv_obj_t *tmp_label;
 lv_obj_t *hum_label;
 lv_obj_t *ppm_label;
 lv_obj_t *status_label;
 lv_obj_t *opmode_label;
 lv_obj_t *ip_address_label;
+lv_obj_t *preassure_diff_label;
 
 static void periodic_timer_callback(void* arg) {
     lvgl_port_lock(0);
@@ -62,6 +65,7 @@ static void periodic_timer_callback(void* arg) {
     sprintf(temp, "%d°C", measurements.temperature);
     sprintf(hum, "%d%%", measurements.humidity);
     sprintf(ppm, "%.1f", measurements.pm25Level);
+    sprintf(preassure_diff, "%ldPa", ac400_get_preasure_diff());
 
     lv_label_set_text(tmp_label, temp);
     lv_label_set_text(hum_label, hum);
@@ -74,6 +78,7 @@ static void periodic_timer_callback(void* arg) {
     
     strcpy(ip_address, get_ip_address());
     lv_label_set_text(ip_address_label, ip_address);
+    lv_label_set_text(preassure_diff_label, preassure_diff);
     lvgl_port_unlock();
 }
 
@@ -83,6 +88,7 @@ void create_ui_components(lv_disp_t *disp)
     sprintf(temp, "%d°C", measurements.temperature);
     sprintf(hum, "%d%%", measurements.humidity);
     sprintf(ppm, "%.1f", measurements.pm25Level);
+    sprintf(preassure_diff, "%ldPa", ac400_get_preasure_diff());
 
     lv_obj_t *scr = lv_disp_get_scr_act(disp);
     tmp_label = lv_label_create(scr);
@@ -111,7 +117,11 @@ void create_ui_components(lv_disp_t *disp)
     
     ip_address_label = lv_label_create(scr);
     lv_label_set_text(ip_address_label, ip_address);
-    lv_obj_align(ip_address_label, LV_ALIGN_BOTTOM_MID, 0, 0);
+    lv_obj_align(ip_address_label, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
+
+    preassure_diff_label = lv_label_create(scr);
+    lv_label_set_text(preassure_diff_label, preassure_diff);
+    lv_obj_align(preassure_diff_label, LV_ALIGN_BOTTOM_LEFT, 0, 0);
 }
 
 void display_start(void)
@@ -166,8 +176,8 @@ void display_start(void)
         .monochrome = true,
         .rotation = {
             .swap_xy = false,
-            .mirror_x = false,
-            .mirror_y = false,
+            .mirror_x = true,
+            .mirror_y = true,
         }
     };
     lv_disp_t * disp = lvgl_port_add_disp(&disp_cfg);

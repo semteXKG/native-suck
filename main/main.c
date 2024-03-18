@@ -8,6 +8,7 @@
 #include "button_controller.h"
 #include "nvs_store.h"
 #include "display.h"
+#include "env_sensor.h"
 
 void app_main(void)
 {
@@ -25,4 +26,5 @@ void app_main(void)
     zigbee_start();    
     webserver_start();
     display_start();
+    env_start();
 }

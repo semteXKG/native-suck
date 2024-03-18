@@ -10,6 +10,7 @@ enum MachineStatus status;
 enum OpMode opMode;
 char ip_addr[16];
 int64_t switched_on_timestamp;
+int32_t preasure_diff;
 
 
 measurements_t measurements = {
@@ -51,6 +52,11 @@ const char* getStatusString() {
     return MachineStatusStr[status];
 }
 
+
+enum MachineStatus ac400_get_status() {
+    return status;
+}
+
 const char* get_ip_address() {
     return ip_addr;
 }
@@ -88,4 +94,12 @@ void advanceOpMode() {
 void advanceStatus() {
     setStatus((status+1) % 3);
     handleStateChange(status);
+}
+
+int32_t ac400_get_preasure_diff() {
+    return preasure_diff;
+}
+
+void ac400_set_preasure_diff(int32_t new_preasure_diff) {
+    preasure_diff = new_preasure_diff;
 }

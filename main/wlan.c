@@ -71,6 +71,8 @@ esp_err_t wifi_init_sta(void)
         },
     };
 
+    ESP_LOGI(TAG, "AP: %s", get_wlan_ap());
+
     strcpy((char*)wifi_config.sta.ssid, get_wlan_ap());
     strcpy((char*)wifi_config.sta.password, get_wlan_pass());
 
