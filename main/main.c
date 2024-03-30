@@ -26,5 +26,5 @@ void app_main(void)
     zigbee_start();    
     webserver_start();
     display_start();
-    env_start();
+    //env_start();
 }

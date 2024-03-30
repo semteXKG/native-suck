@@ -59,8 +59,8 @@ void env_start() {
         return;
     }
 
-    ESP_ERROR_CHECK(bmx280_init_with_address(bmx280_primary, 0xEC));
-    ESP_ERROR_CHECK(bmx280_init_with_address(bmx280_secondary, 0xEE));
+    ESP_ERROR_CHECK(bmx280_init_with_address(bmx280_primary, 0xEE));
+    ESP_ERROR_CHECK(bmx280_init_with_address(bmx280_secondary, 0xEC));
 
     bmx280_config_t bmx_cfg = {
         .iir_filter = BMX280_IIR_NONE,
