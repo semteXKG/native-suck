@@ -16,7 +16,7 @@
 #include "lvgl.h"
 #include "esp_lvgl_port.h"
 #include "state.h"
-
+#include "esp_heap_caps.h"
 #include "esp_lcd_panel_vendor.h"
 
 static const char *TAG = "display";
@@ -26,7 +26,7 @@ static const char *TAG = "display";
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////// Please update the following configuration according to your LCD spec //////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#define EXAMPLE_LCD_PIXEL_CLOCK_HZ    (100 * 1000)
+#define EXAMPLE_LCD_PIXEL_CLOCK_HZ    (400 * 1000)
 #define EXAMPLE_PIN_NUM_SDA           5
 #define EXAMPLE_PIN_NUM_SCL           6
 #define EXAMPLE_PIN_NUM_RST           -1
@@ -59,6 +59,11 @@ lv_obj_t *ip_address_label;
 lv_obj_t *preassure_diff_label;
 
 static void periodic_timer_callback(void* arg) {
+    multi_heap_info_t info;
+    heap_caps_get_info(&info, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT); 
+    
+    //ESP_LOGI(TAG, "MinFreeByte: %d, TotalFreebyte: %d", info.minimum_free_bytes, info.total_free_bytes);
+
     lvgl_port_lock(0);
 
     measurements_t measurements = getMeasurements();

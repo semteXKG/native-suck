@@ -21,7 +21,6 @@ void esp_env_task() {
     while (1)
     {
         cnt++;
-
         do {
             vTaskDelay(pdMS_TO_TICKS(1));
         } while(bmx280_isSampling(bmx280_primary) || bmx280_isSampling(bmx280_secondary));
