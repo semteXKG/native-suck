@@ -7,10 +7,11 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "driver/spi_master.h"
 #include "esp_timer.h"
 #include "esp_lcd_panel_io.h"
+#include "esp_lcd_panel_io_interface.h"
 #include "esp_lcd_panel_ops.h"
-#include "driver/i2c.h"
 #include "esp_err.h"
 #include "esp_log.h"
 #include "lvgl.h"
@@ -18,6 +19,7 @@
 #include "state.h"
 #include "esp_heap_caps.h"
 #include "esp_lcd_panel_vendor.h"
+#include "esp_lcd_ili9341.h"
 
 static const char *TAG = "display";
 
@@ -40,6 +42,18 @@ static const char *TAG = "display";
 #define EXAMPLE_LCD_CMD_BITS           8
 #define EXAMPLE_LCD_PARAM_BITS         8
 
+#define TEST_LCD_HOST               SPI2_HOST
+#define TEST_LCD_H_RES              (320)
+#define TEST_LCD_V_RES              (240)
+#define TEST_LCD_BIT_PER_PIXEL      (16)
+
+#define TEST_PIN_NUM_LCD_RST        (GPIO_NUM_6)
+#define TEST_PIN_NUM_LCD_CS         (GPIO_NUM_7)
+#define TEST_PIN_NUM_LCD_PCLK       (GPIO_NUM_4)
+#define TEST_PIN_NUM_LCD_DATA0      (GPIO_NUM_5)
+#define TEST_PIN_NUM_LCD_DC         (GPIO_NUM_2)
+#define TEST_PIN_NUM_LCD_BL         (GPIO_NUM_3)        
+
 static int16_t col_dsc[] = {42, 42, 43, LV_GRID_TEMPLATE_LAST};
 static int16_t row_dsc[] = {8, 8, 8, LV_GRID_TEMPLATE_LAST};
 
@@ -57,6 +71,16 @@ lv_obj_t *status_label;
 lv_obj_t *opmode_label;
 lv_obj_t *ip_address_label;
 lv_obj_t *preassure_diff_label;
+
+static SemaphoreHandle_t refresh_finish = NULL;
+
+IRAM_ATTR static bool test_notify_refresh_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx)
+{
+    BaseType_t need_yield = pdFALSE;
+
+    xSemaphoreGiveFromISR(refresh_finish, &need_yield);
+    return (need_yield == pdTRUE);
+}
 
 static void periodic_timer_callback(void* arg) {
     multi_heap_info_t info;
@@ -131,40 +155,41 @@ void create_ui_components(lv_disp_t *disp)
 
 void display_start(void)
 {
-    ESP_LOGI(TAG, "Initialize I2C bus");
-    i2c_config_t i2c_conf = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = EXAMPLE_PIN_NUM_SDA,
-        .scl_io_num = EXAMPLE_PIN_NUM_SCL,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = EXAMPLE_LCD_PIXEL_CLOCK_HZ,
+
+    ESP_LOGI(TAG, "Turn on the backlight");
+    gpio_config_t io_conf = {
+        .pin_bit_mask = BIT64(TEST_PIN_NUM_LCD_BL),
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
     };
-    ESP_ERROR_CHECK(i2c_param_config(I2C_HOST, &i2c_conf));
-    ESP_ERROR_CHECK(i2c_driver_install(I2C_HOST, I2C_MODE_MASTER, 0, 0, 0));
+    gpio_config(&io_conf);
+    gpio_set_level(TEST_PIN_NUM_LCD_BL, 1);
+
+    ESP_LOGI(TAG, "Initialize SPI bus");
+    const spi_bus_config_t buscfg = ILI9341_PANEL_BUS_SPI_CONFIG(TEST_PIN_NUM_LCD_PCLK, TEST_PIN_NUM_LCD_DATA0,
+                                    TEST_LCD_H_RES * 80 * TEST_LCD_BIT_PER_PIXEL / 8);
+    ESP_ERROR_CHECK(spi_bus_initialize(TEST_LCD_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
     ESP_LOGI(TAG, "Install panel IO");
     esp_lcd_panel_io_handle_t io_handle = NULL;
-    esp_lcd_panel_io_i2c_config_t io_config = {
-        .dev_addr = EXAMPLE_I2C_HW_ADDR,
-        .control_phase_bytes = 1,               // According to SSD1306 datasheet
-        .lcd_cmd_bits = EXAMPLE_LCD_CMD_BITS,   // According to SSD1306 datasheet
-        .lcd_param_bits = EXAMPLE_LCD_CMD_BITS, // According to SSD1306 datasheet
-        .dc_bit_offset = 6,                     // According to SSD1306 datasheet
-    };
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(I2C_HOST, &io_config, &io_handle));
+    const esp_lcd_panel_io_spi_config_t io_config = ILI9341_PANEL_IO_SPI_CONFIG(TEST_PIN_NUM_LCD_CS, TEST_PIN_NUM_LCD_DC,
+            test_notify_refresh_ready, NULL);
+    // Attach the LCD to the SPI bus
+    ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)TEST_LCD_HOST, &io_config, &io_handle));
 
-    ESP_LOGI(TAG, "Install SSD1306 panel driver");
+    ESP_LOGI(TAG, "Install ili9341 panel driver");
     esp_lcd_panel_handle_t panel_handle = NULL;
-    esp_lcd_panel_dev_config_t panel_config = {
-        .bits_per_pixel = 1,
-        .reset_gpio_num = EXAMPLE_PIN_NUM_RST,
+    const esp_lcd_panel_dev_config_t panel_config = {
+        .reset_gpio_num = TEST_PIN_NUM_LCD_RST, // Shared with Touch reset
+        .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_BGR,
+        .bits_per_pixel = TEST_LCD_BIT_PER_PIXEL,
     };
-
-    ESP_ERROR_CHECK(esp_lcd_new_panel_ssd1306(io_handle, &panel_config, &panel_handle));
-
+    ESP_ERROR_CHECK(esp_lcd_new_panel_ili9341(io_handle, &panel_config, &panel_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
+    ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, true, true));
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
 
     ESP_LOGI(TAG, "Initialize LVGL");
@@ -174,23 +199,24 @@ void display_start(void)
     const lvgl_port_display_cfg_t disp_cfg = {
         .io_handle = io_handle,
         .panel_handle = panel_handle,
-        .buffer_size = EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES,
+        .buffer_size = (TEST_LCD_H_RES * TEST_LCD_V_RES) / 10,
         .double_buffer = true,
-        .hres = EXAMPLE_LCD_H_RES,
-        .vres = EXAMPLE_LCD_V_RES,
-        .monochrome = true,
+        .hres = TEST_LCD_H_RES,
+        .vres = TEST_LCD_V_RES,
+        .monochrome = false,
+        .flags.buff_dma = true,
         .rotation = {
-            .swap_xy = false,
-            .mirror_x = true,
-            .mirror_y = true,
+            .swap_xy = true,
+            .mirror_x = false,
+            .mirror_y = false,
         }
     };
     lv_disp_t * disp = lvgl_port_add_disp(&disp_cfg);
-    
-    /* Rotation of the screen */
-    lv_disp_set_rotation(disp, LV_DISP_ROT_NONE);
+    disp->driver->antialiasing = 0;
 
-    ESP_LOGI(TAG, "Display LVGL Scroll Text");
+    /* Rotation of the screen */
+    lv_disp_set_rotation(disp, LV_DISPLAY_ROTATION_0);
+
     // Lock the mutex due to the LVGL APIs are not thread-safe
     if (lvgl_port_lock(0)) {
         create_ui_components(disp);

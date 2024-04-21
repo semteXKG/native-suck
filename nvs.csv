@@ -3,5 +3,5 @@ sucker,namespace,,
 low_limit,data,i16,20
 high_limit,data,i16,40
 afterrun,data,i16,180
-username,data,string,"la"
-password,data,string,"blub"
+username,data,string,"semmalNet"
+password,data,string,"wirefun3"
