@@ -25,5 +25,4 @@ void app_main(void)
     wlan_start();
     zigbee_start();    
     webserver_start();
-    env_start();
 }

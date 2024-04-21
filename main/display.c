@@ -23,44 +23,21 @@
 
 static const char *TAG = "display";
 
-#define I2C_HOST  0
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////// Please update the following configuration according to your LCD spec //////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#define EXAMPLE_LCD_PIXEL_CLOCK_HZ    (400 * 1000)
-#define EXAMPLE_PIN_NUM_SDA           5
-#define EXAMPLE_PIN_NUM_SCL           6
-#define EXAMPLE_PIN_NUM_RST           -1
-#define EXAMPLE_I2C_HW_ADDR           0x3C
-
-// The pixel number in horizontal and vertical
-#define EXAMPLE_LCD_H_RES              128
-#define EXAMPLE_LCD_V_RES              64
-
-// Bit number used to represent command and parameter
-#define EXAMPLE_LCD_CMD_BITS           8
-#define EXAMPLE_LCD_PARAM_BITS         8
-
 #define TEST_LCD_HOST               SPI2_HOST
 #define TEST_LCD_H_RES              (320)
 #define TEST_LCD_V_RES              (240)
 #define TEST_LCD_BIT_PER_PIXEL      (16)
 
-#define TEST_PIN_NUM_LCD_RST        (GPIO_NUM_6)
-#define TEST_PIN_NUM_LCD_CS         (GPIO_NUM_7)
-#define TEST_PIN_NUM_LCD_PCLK       (GPIO_NUM_4)
-#define TEST_PIN_NUM_LCD_DATA0      (GPIO_NUM_5)
-#define TEST_PIN_NUM_LCD_DC         (GPIO_NUM_2)
+#define TEST_PIN_NUM_LCD_RST        (GPIO_NUM_5)
+#define TEST_PIN_NUM_LCD_CS         (GPIO_NUM_6)
+#define TEST_PIN_NUM_LCD_PCLK       (GPIO_NUM_2)
+#define TEST_PIN_NUM_LCD_DATA0      (GPIO_NUM_7)
+#define TEST_PIN_NUM_LCD_DC         (GPIO_NUM_4)
 #define TEST_PIN_NUM_LCD_BL         (GPIO_NUM_3)        
-
-static int16_t col_dsc[] = {42, 42, 43, LV_GRID_TEMPLATE_LAST};
-static int16_t row_dsc[] = {8, 8, 8, LV_GRID_TEMPLATE_LAST};
 
 char temp[10];
 char hum[10];
 char ppm[20];
-char preassure_diff[30];
 char centerText[30];
 char ip_address[30];
 
@@ -70,7 +47,6 @@ lv_obj_t *ppm_label;
 lv_obj_t *status_label;
 lv_obj_t *opmode_label;
 lv_obj_t *ip_address_label;
-lv_obj_t *preassure_diff_label;
 
 static SemaphoreHandle_t refresh_finish = NULL;
 
@@ -94,7 +70,6 @@ static void periodic_timer_callback(void* arg) {
     sprintf(temp, "%d°C", measurements.temperature);
     sprintf(hum, "%d%%", measurements.humidity);
     sprintf(ppm, "%.1f", measurements.pm25Level);
-    sprintf(preassure_diff, "%ldPa", ac400_get_preasure_diff());
 
     lv_label_set_text(tmp_label, temp);
     lv_label_set_text(hum_label, hum);
@@ -107,19 +82,26 @@ static void periodic_timer_callback(void* arg) {
     
     strcpy(ip_address, get_ip_address());
     lv_label_set_text(ip_address_label, ip_address);
-    lv_label_set_text(preassure_diff_label, preassure_diff);
     lvgl_port_unlock();
 }
 
 void create_ui_components(lv_disp_t *disp)
 {
+    
     measurements_t measurements = getMeasurements();
     sprintf(temp, "%d°C", measurements.temperature);
     sprintf(hum, "%d%%", measurements.humidity);
     sprintf(ppm, "%.1f", measurements.pm25Level);
-    sprintf(preassure_diff, "%ldPa", ac400_get_preasure_diff());
 
     lv_obj_t *scr = lv_disp_get_scr_act(disp);
+    lv_obj_set_style_bg_color(scr, lv_color_hex(0xff0000), LV_PART_MAIN);
+    lv_obj_set_style_text_color(scr, lv_color_hex(0xffffff), LV_PART_MAIN);
+
+    lv_obj_set_style_pad_top(scr, 20, LV_PART_MAIN);
+    lv_obj_set_style_pad_bottom(scr, 20, LV_PART_MAIN);
+    lv_obj_set_style_pad_left(scr, 20, LV_PART_MAIN);
+    lv_obj_set_style_pad_right(scr, 20, LV_PART_MAIN);
+
     tmp_label = lv_label_create(scr);
     lv_label_set_text(tmp_label, temp);
     lv_obj_align(tmp_label, LV_ALIGN_TOP_LEFT, 0, 0);
@@ -138,7 +120,7 @@ void create_ui_components(lv_disp_t *disp)
     
     status_label = lv_label_create(scr);
     lv_label_set_text(status_label, centerText);
-    lv_obj_set_style_text_font(status_label, &lv_font_montserrat_22, LV_PART_MAIN);
+    lv_obj_set_style_text_font(status_label, &lv_font_montserrat_48, LV_PART_MAIN);
 
     lv_obj_align(status_label, LV_ALIGN_CENTER, 0, 0);
 
@@ -146,11 +128,7 @@ void create_ui_components(lv_disp_t *disp)
     
     ip_address_label = lv_label_create(scr);
     lv_label_set_text(ip_address_label, ip_address);
-    lv_obj_align(ip_address_label, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
-
-    preassure_diff_label = lv_label_create(scr);
-    lv_label_set_text(preassure_diff_label, preassure_diff);
-    lv_obj_align(preassure_diff_label, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+    lv_obj_align(ip_address_label, LV_ALIGN_BOTTOM_MID, 0, 0);
 }
 
 void display_start(void)
@@ -231,5 +209,5 @@ void display_start(void)
 
     esp_timer_handle_t periodic_timer;
     ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
-    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, 500000));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, 100000));
 }
