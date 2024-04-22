@@ -28,6 +28,7 @@ void setOpMode(enum OpMode newOpMode) {
     }
     ESP_LOGI(LOG, "Switching OpMode: %s -> %s", OpModeStr[opMode], OpModeStr[newOpMode]);
     opMode = newOpMode;
+    store_save_last_op_mode(opMode);
 }
 
 void setStatus(enum MachineStatus newStatus) {

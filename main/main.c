@@ -25,4 +25,5 @@ void app_main(void)
     wlan_start();
     zigbee_start();    
     webserver_start();
+    setOpMode(store_read_last_op_mode());
 }

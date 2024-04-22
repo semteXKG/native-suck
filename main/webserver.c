@@ -65,7 +65,7 @@ esp_err_t send_web_page(httpd_req_t *req)
     if(readFile(req->uri, buffer, &bytesRead) == ESP_OK) {
         if(strstr(req->uri, "index.html") || strcmp(req->uri, "/") == 0) {
             char newBuffer[BUF_SIZE];
-            int written = sprintf(newBuffer, buffer, get_low_limit(), get_high_limit(), get_afterrun_seconds(), get_wlan_ap(), get_wlan_pass());
+            int written = sprintf(newBuffer, buffer, get_low_limit(), get_high_limit(), get_afterrun_seconds(), store_read_wlan_ap(), store_read_wlan_pass());
             return httpd_resp_send(req, newBuffer, written);
         } else {
             return httpd_resp_send(req, buffer, bytesRead);

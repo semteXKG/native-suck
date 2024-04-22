@@ -5,3 +5,4 @@ high_limit,data,i16,40
 afterrun,data,i16,180
 username,data,string,"semmalNet"
 password,data,string,"wirefun3"
+last_opmode,data,i16,0

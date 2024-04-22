@@ -8,13 +8,15 @@
 #define AFTERRUN_SECONDS "afterrun"
 #define AP_NAME "username"
 #define PASSWORD "password"
-
+#define LAST_OPMODE "last_opmode"
 int16_t cached_low_limit;
 int16_t cached_high_limit;
 int16_t cached_afterrun_seconds;
 
 char cached_ap_name[30];
 char cached_password[30];
+
+int16_t cached_lastOpmode;
 
 static const char* TAG = "STORE";
 
@@ -62,11 +64,15 @@ void store_start() {
         readInt(LOW_LIMIT, &cached_low_limit);
         readInt(HIGH_LIMIT, &cached_high_limit);
         readInt(AFTERRUN_SECONDS, &cached_afterrun_seconds);
+        readInt(LAST_OPMODE, &cached_lastOpmode);
+
         readString(AP_NAME, cached_ap_name, "");
         readString(PASSWORD, cached_password, "");
 
+
         ESP_LOGI(TAG, "Read lower [%d] and higher [%d] with afterrun [%d]", cached_low_limit, cached_high_limit, cached_afterrun_seconds);
         ESP_LOGI(TAG, "Read user [%s] with password [%s]", cached_ap_name, cached_password);
+        ESP_LOGI(TAG, "Read last OpMode as [%s]", OpModeStr[cached_lastOpmode]);
     }        
 }
 
@@ -101,9 +107,18 @@ void set_wlan_credentials(char* ap_name, char* password) {
     nvs_commit(my_handle);
 }
 
-char* get_wlan_ap(){
+char* store_read_wlan_ap(){
     return cached_ap_name;
 }
-char* get_wlan_pass(){
+char* store_read_wlan_pass(){
     return cached_password;
+}
+
+void store_save_last_op_mode(enum OpMode opMode) {
+    cached_lastOpmode = (int16_t) opMode;
+    writeInt(LAST_OPMODE, cached_lastOpmode);
+}
+
+enum OpMode store_read_last_op_mode() {
+    return (enum OpMode) cached_lastOpmode;
 }

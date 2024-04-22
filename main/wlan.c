@@ -71,10 +71,10 @@ esp_err_t wifi_init_sta(void)
         },
     };
 
-    ESP_LOGI(TAG, "AP: %s", get_wlan_ap());
+    ESP_LOGI(TAG, "AP: %s", store_read_wlan_ap());
 
-    strcpy((char*)wifi_config.sta.ssid, get_wlan_ap());
-    strcpy((char*)wifi_config.sta.password, get_wlan_pass());
+    strcpy((char*)wifi_config.sta.ssid, store_read_wlan_ap());
+    strcpy((char*)wifi_config.sta.password, store_read_wlan_pass());
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
@@ -100,12 +100,12 @@ esp_err_t wifi_init_sta(void)
         char ip_addr[16];
         inet_ntoa_r(ip_info.ip.addr, ip_addr, 16);
 
-        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s and ip %s", get_wlan_ap(), get_wlan_pass(), ip_addr);
+        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s and ip %s", store_read_wlan_ap(), store_read_wlan_pass(), ip_addr);
         set_ip_address(ip_addr);
 
         return ESP_OK;
     } else if (bits & WIFI_FAIL_BIT) {
-        ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s", get_wlan_ap(), get_wlan_pass());
+        ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s", store_read_wlan_ap(), store_read_wlan_pass());
     } else {
         ESP_LOGE(TAG, "UNEXPECTED EVENT");
     }
