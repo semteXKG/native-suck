@@ -49,6 +49,23 @@ lv_obj_t *opmode_label;
 lv_obj_t *ip_address_label;
 
 static SemaphoreHandle_t refresh_finish = NULL;
+lv_disp_t *disp;
+
+uint32_t get_background_color() {
+    switch (ac400_get_status()) {
+        case OFF: 
+            return 0x007700;
+        case ON_LOW:
+            return 0xDC9900;
+        case ON_HIGH: 
+            return 0x770000;
+    }
+    return 0x000000;
+}
+
+uint32_t get_foreground_color() {
+    return 0xffffff;
+}
 
 IRAM_ATTR static bool test_notify_refresh_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx)
 {
@@ -59,12 +76,11 @@ IRAM_ATTR static bool test_notify_refresh_ready(esp_lcd_panel_io_handle_t panel_
 }
 
 static void periodic_timer_callback(void* arg) {
-    multi_heap_info_t info;
-    heap_caps_get_info(&info, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT); 
-    
-    //ESP_LOGI(TAG, "MinFreeByte: %d, TotalFreebyte: %d", info.minimum_free_bytes, info.total_free_bytes);
 
     lvgl_port_lock(0);
+    lv_obj_t *scr = lv_disp_get_scr_act(disp);
+    lv_obj_set_style_bg_color(scr, lv_color_hex(get_background_color()), LV_PART_MAIN);
+    lv_obj_set_style_text_color(scr, lv_color_hex(get_foreground_color()), LV_PART_MAIN);
 
     measurements_t measurements = getMeasurements();
     sprintf(temp, "%d°C", measurements.temperature);
@@ -94,8 +110,8 @@ void create_ui_components(lv_disp_t *disp)
     sprintf(ppm, "%.1f", measurements.pm25Level);
 
     lv_obj_t *scr = lv_disp_get_scr_act(disp);
-    lv_obj_set_style_bg_color(scr, lv_color_hex(0xff0000), LV_PART_MAIN);
-    lv_obj_set_style_text_color(scr, lv_color_hex(0xffffff), LV_PART_MAIN);
+    lv_obj_set_style_bg_color(scr, lv_color_hex(get_background_color()), LV_PART_MAIN);
+    lv_obj_set_style_text_color(scr, lv_color_hex(get_foreground_color()), LV_PART_MAIN);
 
     lv_obj_set_style_pad_top(scr, 20, LV_PART_MAIN);
     lv_obj_set_style_pad_bottom(scr, 20, LV_PART_MAIN);
@@ -113,6 +129,8 @@ void create_ui_components(lv_disp_t *disp)
     ppm_label = lv_label_create(scr);
     lv_label_set_text(ppm_label, ppm);
     lv_obj_align(ppm_label, LV_ALIGN_TOP_MID, 0, 0);
+    lv_obj_set_style_text_font(ppm_label, &lv_font_montserrat_36, LV_PART_MAIN);
+
 
     strcat(centerText, getOpModeString());
     strcat(centerText, " - ");
@@ -189,7 +207,7 @@ void display_start(void)
             .mirror_y = false,
         }
     };
-    lv_disp_t * disp = lvgl_port_add_disp(&disp_cfg);
+    disp = lvgl_port_add_disp(&disp_cfg);
     disp->driver->antialiasing = 0;
 
     /* Rotation of the screen */
