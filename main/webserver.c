@@ -189,6 +189,12 @@ esp_err_t post_handler(httpd_req_t * req) {
     return httpd_resp_send(req, "Redirect to index", HTTPD_RESP_USE_STRLEN);
 }
 
+esp_err_t post_upload_handler(httpd_req_t *req) {
+    req->handle
+    httpd_resp_set_status(req, "302 Temporary Redirect");
+    httpd_resp_set_hdr(req, "Location", "/index.html");
+    return httpd_resp_send(req, "Redirect to index", HTTPD_RESP_USE_STRLEN);
+}
 
 httpd_uri_t uri_get_status = {
     .uri = "/status",
@@ -250,6 +256,13 @@ httpd_uri_t uri_get_png = {
     .uri = "/favicon.png",
     .method = HTTP_GET,
     .handler = get_png_req_handler,
+    .user_ctx = NULL
+};
+
+httpd_uri_t uri_post_upload = {
+    .uri = "/upload",
+    .method = HTTP_POST,
+    .handler = post_upload_handler,
     .user_ctx = NULL
 };
 
