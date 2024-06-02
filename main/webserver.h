@@ -12,4 +12,6 @@
 #include "esp_log.h"
 #include "state.h"
 #include "nvs_store.h"
+#include "esp_ota_ops.h"
+#include "ac400_util.h"
 void webserver_start();

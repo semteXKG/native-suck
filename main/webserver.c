@@ -189,12 +189,122 @@ esp_err_t post_handler(httpd_req_t * req) {
     return httpd_resp_send(req, "Redirect to index", HTTPD_RESP_USE_STRLEN);
 }
 
+char* find_delimiter(httpd_req_t* req) {
+    char* field = "Content-Type";
+    char* boundary = "boundary=";
+    size_t len = httpd_req_get_hdr_value_len(req, field);
+    if(len == 0) {
+        return NULL;
+    }
+
+    char header_value[len+1];
+    httpd_req_get_hdr_value_str(req, field, header_value, len+1);
+    char* new_start = strstr(header_value, boundary);
+    if (new_start == NULL) {
+        return NULL;
+    }
+
+    new_start += strlen(boundary);
+
+    char* buffer_with_padding = malloc(3 + strlen(new_start));
+
+    strcpy(buffer_with_padding, "--");
+    strcat(buffer_with_padding, new_start);
+
+    ESP_LOGI(TAG, "Header: %s with len %d", buffer_with_padding, strlen(buffer_with_padding));    
+    return buffer_with_padding  ;
+}
+
+void ac400_firmware_updater(httpd_req_t *req) {
+    bool start_found = false;
+    bool end_found = false;
+    int bufSize = 100;
+    size_t already_fetched = 0;
+    char buffer[bufSize];
+    esp_ota_handle_t handle;
+    esp_partition_t* partition = esp_ota_get_next_update_partition(esp_ota_get_running_partition());
+    ESP_LOGI(TAG, "STARTING upload to partition %s", partition->label);
+
+    //ESP_ERROR_CHECK(esp_ota_begin(partition, req->content_len, &handle));
+    
+    char* needle = find_delimiter(req);
+    int segment = 0;
+    while (true) {
+        if (segment++ % 100 == 0) {
+            ESP_LOGI(TAG, "Loading segment %d", segment);
+        }
+
+//        size_t request_size = MIN(req->content_len - already_fetched, sizeof(buffer));
+
+        char* effective_buffer = buffer;
+        size_t data_received = httpd_req_recv(req, buffer, bufSize);
+        
+        if (data_received != bufSize) {
+            ESP_LOGI(TAG, "Got %d byte but requested %d", data_received, bufSize);
+        }
+
+        if (data_received <= 0) {
+            ESP_LOGI(TAG, "No more data avail, bailing (code %d), total bytes: %d", data_received, already_fetched);
+            break;
+        }
+        int effective_data_received = data_received;
+        if (!start_found) {
+            find_result needle_match = find_match(buffer, effective_data_received, needle);
+            find_result start_match = find_match(buffer, effective_data_received, "\r\n\r\n");
+            if (needle_match.found_at != NULL) {
+                ESP_LOGI(TAG, "Found START needle");
+            }
+
+            if (start_match.found_at != NULL) {
+                start_found = true;
+                ESP_LOGI(TAG, "Found START pos");
+                effective_buffer = start_match.found_at + 4;
+                effective_data_received = effective_data_received - (start_match.found_at - effective_buffer);
+            }
+        }
+       
+        if (start_found) {
+            find_result end_match = find_match(effective_buffer, effective_data_received, needle);
+            if (end_match.found_at != NULL) {
+                end_found = true;
+                ESP_LOGI(TAG, "Found END pos");
+                // remove new line
+                
+                effective_data_received = end_match.found_at - effective_buffer - 2;
+                ESP_LOGI(TAG, "New buffer length: %d", effective_data_received);
+                //ESP_LOGI(TAG, "payload: %s",effective_buffer);
+                printBuffer(effective_buffer, effective_data_received - 10, 10);
+            }
+        }
+        
+        if(effective_data_received <= 0) {
+            if (effective_data_received == HTTPD_SOCK_ERR_TIMEOUT) {
+                httpd_resp_send_408(req);
+            }
+            httpd_resp_send_500(req);
+        }
+        //ESP_ERROR_CHECK(esp_ota_write(handle, effective_buffer, effective_data_received));  
+        already_fetched += data_received;
+        if (end_found) {
+            break;
+        }
+    }
+
+    printBuffer(buffer, 0, 50);
+
+    //ESP_ERROR_CHECK(esp_ota_end(handle));
+    ESP_LOGI(TAG, "DONE upload");
+}
+
+
 esp_err_t post_upload_handler(httpd_req_t *req) {
-    req->handle
+    ac400_firmware_updater(req);
+
     httpd_resp_set_status(req, "302 Temporary Redirect");
     httpd_resp_set_hdr(req, "Location", "/index.html");
     return httpd_resp_send(req, "Redirect to index", HTTPD_RESP_USE_STRLEN);
 }
+
 
 httpd_uri_t uri_get_status = {
     .uri = "/status",
@@ -260,7 +370,7 @@ httpd_uri_t uri_get_png = {
 };
 
 httpd_uri_t uri_post_upload = {
-    .uri = "/upload",
+    .uri = "/update",
     .method = HTTP_POST,
     .handler = post_upload_handler,
     .user_ctx = NULL
@@ -281,6 +391,8 @@ httpd_handle_t setup_server(void)
     config.stack_size = 40960;
     config.max_open_sockets = 7;
     config.max_uri_handlers = 20;
+    config.recv_wait_timeout = 120;
+    config.send_wait_timeout = 120;
 
     httpd_handle_t server = NULL;
 
@@ -294,7 +406,8 @@ httpd_handle_t setup_server(void)
         httpd_register_uri_handler(server, &uri_get_operation_off);
         httpd_register_uri_handler(server, &uri_get_operation_auto);
         httpd_register_uri_handler(server, &uri_get_style);
-        httpd_register_uri_handler(server, &uri_get_png);           
+        httpd_register_uri_handler(server, &uri_get_png);     
+        httpd_register_uri_handler(server, &uri_post_upload);      
         httpd_register_uri_handler(server, &uri_get_wild);
     }
     return server;
