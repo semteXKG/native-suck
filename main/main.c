@@ -9,10 +9,12 @@
 #include "nvs_store.h"
 #include "display.h"
 #include "env_sensor.h"
+#include "ota_updater.h"
 
 void app_main(void)
 {
-    ESP_LOGI("APP", "hallo welt");
+    ota_updater_print_info();
+
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -26,4 +28,6 @@ void app_main(void)
     zigbee_start();    
     webserver_start();
     setOpMode(store_read_last_op_mode());
+    
+    ota_updater_activate_current_partition();
 }

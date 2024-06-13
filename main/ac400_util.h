@@ -3,11 +3,9 @@
 #include <string.h>
 #include <constants.h>
 #include <stdbool.h>
+#include <esp_http_server.h>
 
-typedef struct find_result_ {
-    char* found_at;
-    bool partial_match;
-} find_result;
 
-find_result find_match(char* buffer, size_t len, char* search_string);
 void printBuffer(char* buffer, size_t start, size_t count);
+char* find_delimiter(httpd_req_t* req);
+

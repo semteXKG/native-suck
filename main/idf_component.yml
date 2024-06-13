@@ -1,5 +1,6 @@
 ## IDF Component Manager Manifest File
 dependencies:
+  zorxx/multipart-parser: "*"
   espressif/esp_lcd_ili9341: "^2"
   espressif/esp_lvgl_port: "^2"
   lvgl/lvgl: "^8"

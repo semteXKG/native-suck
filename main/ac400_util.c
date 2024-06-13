@@ -9,46 +9,28 @@ void printBuffer(char* buffer, size_t start, size_t count) {
     }
 }
 
-find_result find_match(char* buffer, size_t len, char* search_string) {
-    find_result result;
-    result.found_at = NULL;
-    result.partial_match = false;
-    //ESP_LOGI(TAG, "Searching in %d buffer for a %d long search string", len, strlen(search_string));
-
-    char* legacy_match = strstr(buffer, search_string);     
-    if (legacy_match != NULL) {
-        result.found_at = legacy_match;
-        ESP_LOGI(TAG, "Legacy search found it");
-    }
-    return result;
-
-    if (strlen(search_string) > len) {
-        result.found_at = NULL;
-        result.partial_match = false;
-        return result;
+char* find_delimiter(httpd_req_t* req) {
+    char* field = "Content-Type";
+    char* boundary = "boundary=";
+    size_t len = httpd_req_get_hdr_value_len(req, field);
+    if(len == 0) {
+        return NULL;
     }
 
-    int search_idx = 0;
-    for (int source_idx = 0; source_idx < len; source_idx++) {
-        if (buffer[source_idx] == search_string[search_idx]) {
-            search_idx++;
-            if (result.found_at == NULL) {
-                result.found_at = &buffer[source_idx];
-            }
-            if (search_string[search_idx] == '\0') {
-                ESP_LOGI(TAG, "Proper Search Found it. Own algo: %p, built in: %p", result.found_at, legacy_match);
-                return result;
-            }
-        } else {
-            result.found_at = NULL;
-            search_idx = 0;
-        }
+    char header_value[len+1];
+    httpd_req_get_hdr_value_str(req, field, header_value, len+1);
+    char* new_start = strstr(header_value, boundary);
+    if (new_start == NULL) {
+        return NULL;
     }
 
-    if  (result.found_at != NULL) {
-        result.found_at = NULL;
-        result.partial_match = true;
-    }
+    new_start += strlen(boundary);
 
-    return result;
+    char* buffer_with_padding = malloc(3 + strlen(new_start));
+
+    strcpy(buffer_with_padding, "--");
+    strcat(buffer_with_padding, new_start);
+
+    ESP_LOGI(TAG, "Header: %s with len %d", buffer_with_padding, strlen(buffer_with_padding));    
+    return buffer_with_padding  ;
 }
