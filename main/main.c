@@ -10,6 +10,7 @@
 #include "display.h"
 #include "env_sensor.h"
 #include "ota_updater.h"
+#include "net_logging.h"
 
 void app_main(void)
 {
@@ -25,6 +26,9 @@ void app_main(void)
     controller_start(GPIO_NUM_23, GPIO_NUM_22);
     button_controller_start(GPIO_NUM_21, GPIO_NUM_20);
     wlan_start();
+
+    udp_logging_init("10.0.0.201", 6789, 1);
+
     zigbee_start();    
     webserver_start();
     setOpMode(store_read_last_op_mode());
