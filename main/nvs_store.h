@@ -20,7 +20,12 @@ enum OpMode store_read_last_op_mode();
 
 
 void set_wlan_credentials(char* ap_name, char* password);
+void store_set_udp_server(char* store, uint16_t port);
+
 char* store_read_wlan_ap();
 char* store_read_wlan_pass();
+char* store_read_udp_server();
+
+uint16_t store_read_udp_port();
 
 void store_start();

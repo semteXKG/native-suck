@@ -105,6 +105,23 @@
         </div>
 
         <div class="card">
+          <p class="card-title"><i class="fas fa-cogs"></i>Access Point</p>
+          <form action="/operation/logging" method="post">
+            <p class="state">
+              UDP Server: <br/>
+              <input type="text" name="udp_server" size="20" value="%s"/>
+            </p>
+            <p class="state">
+              UDP Port: <br/> 
+              <input type="text" name="udp_port" size="5" value="%d" />
+            </p>
+            <p>
+              <input type="submit" value="Save"/>
+            </p>
+          </form>
+        </div>
+
+        <div class="card">
           <p class="card-title"><i class="fas fa-cogs"></i>OTA Update</p>
           <form action="/update" method="post" enctype="multipart/form-data">
             <p class="state">

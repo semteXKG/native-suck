@@ -6,3 +6,5 @@ afterrun,data,i16,180
 username,data,string,"semmalNet"
 password,data,string,"wirefun3"
 last_opmode,data,i16,0
+udp_server,data,string,""
+udp_port,data,i16,0

@@ -78,7 +78,7 @@ void udp_client(void *pvParameters) {
 			//printf("xMessageBufferReceive buffer=[%.*s]\n",received, buffer);
 			//udp_dump("buffer", buffer, received);
 			ret = lwip_sendto(fd, buffer, received, 0, (struct sockaddr *)&addr, sizeof(addr));
-			LWIP_ASSERT("ret == received", ret == received);
+//			LWIP_ASSERT("ret == received", ret == received);
 #if CONFIG_USE_RINGBUFFER
 			vRingbufferReturnItem(xRingBufferTrans, (void *)buffer);
 #endif

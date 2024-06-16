@@ -12,6 +12,14 @@
 #include "ota_updater.h"
 #include "net_logging.h"
 
+void logging_start() {
+    if (strlen(store_read_udp_server()) > 0) {
+        ESP_LOGI("main", "Starting with logging on %s:%d", store_read_udp_server(), store_read_udp_port());
+        unsigned long port = store_read_udp_port();
+        udp_logging_init(store_read_udp_server(), port, 1);
+    }
+}
+
 void app_main(void)
 {
     ota_updater_print_info();
@@ -27,10 +35,11 @@ void app_main(void)
     button_controller_start(GPIO_NUM_21, GPIO_NUM_20);
     wlan_start();
 
-    udp_logging_init("10.0.0.201", 6789, 1);
-
+    logging_start();
+    
     zigbee_start();    
     webserver_start();
+
     setOpMode(store_read_last_op_mode());
     
     ota_updater_activate_current_partition();

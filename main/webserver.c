@@ -66,7 +66,7 @@ esp_err_t send_web_page(httpd_req_t *req)
     if(readFile(req->uri, buffer, &bytesRead) == ESP_OK) {
         if(strstr(req->uri, "index.html") || strcmp(req->uri, "/") == 0) {
             char newBuffer[BUF_SIZE];
-            int written = sprintf(newBuffer, buffer, get_low_limit(), get_high_limit(), get_afterrun_seconds(), store_read_wlan_ap(), store_read_wlan_pass());
+            int written = sprintf(newBuffer, buffer, get_low_limit(), get_high_limit(), get_afterrun_seconds(), store_read_wlan_ap(), store_read_wlan_pass(), store_read_udp_server(), store_read_udp_port());
             return httpd_resp_send(req, newBuffer, written);
         } else {
             return httpd_resp_send(req, buffer, bytesRead);
@@ -164,6 +164,42 @@ void handle_credentials(char* buffer) {
     esp_restart();
 }
 
+void handle_udp_logging(char* buffer) {
+    char *outer, *inner;    
+    char* token = strtok_r(buffer, "&", &outer);
+    char udp_server[50];
+    char udp_port[50];
+
+    ESP_LOGI(TAG, "Buf: %s", buffer);
+
+    while(token != NULL) {
+        ESP_LOGI(TAG, "PRE-key w token %s", token);
+        inner = token;
+        char *key_value_pair = strtok_r(token, "=", &inner);
+        ESP_LOGI(TAG, "Key:: %s", outer);
+
+        if(strcmp(key_value_pair, "udp_server") == 0) {
+            if (token[strlen(token)-1] == '=') {
+                key_value_pair = "";
+            } else {
+                key_value_pair = strtok_r(NULL, "=", &inner);
+            }
+            strcpy(udp_server, key_value_pair);
+        } else if (strcmp(key_value_pair, "udp_port") == 0) {
+            ESP_LOGI(TAG, "UDP pre value");
+            key_value_pair = strtok_r(NULL, "=", &inner);
+            ESP_LOGI(TAG, "UDP post value %s", key_value_pair);
+            strcpy(udp_port, key_value_pair);
+        }
+        ESP_LOGI(TAG, "Outer: %s", outer);
+        token = strtok_r(NULL, "&", &outer);
+        ESP_LOGI(TAG, "Outer - after: %s", token);
+    }
+
+    store_set_udp_server(udp_server, atoi(udp_port));
+    ESP_LOGI(TAG, "New Server Settings: %s : %d", store_read_udp_server(), store_read_udp_port());
+}
+
 esp_err_t post_handler(httpd_req_t * req) {
     char content[100];
 
@@ -177,11 +213,15 @@ esp_err_t post_handler(httpd_req_t * req) {
         }
         return ESP_FAIL;
     }
+    content[ret-1] = '\0';
+
     ESP_LOGI(TAG, "Readback: %s", content);
     if (strstr(req->uri, "limits")) {
         handle_limits(content);
     } else if (strstr(req->uri, "credentials")) {
         handle_credentials(content);
+    } else if (strstr(req->uri, "logging")) {
+        handle_udp_logging(content);
     } 
 
     /* Send a simple response */
@@ -189,10 +229,6 @@ esp_err_t post_handler(httpd_req_t * req) {
     httpd_resp_set_hdr(req, "Location", "/index.html");
     return httpd_resp_send(req, "Redirect to index", HTTPD_RESP_USE_STRLEN);
 }
-
-
-
-
 
 esp_err_t post_upload_handler(httpd_req_t *req) {
     ac400_firmware_updater(req);
@@ -252,6 +288,13 @@ httpd_uri_t uri_post_credentials = {
     .user_ctx = NULL
 };
 
+httpd_uri_t uri_udp_logging = {
+    .uri = "/operation/logging",
+    .method = HTTP_POST,
+    .handler = post_handler,
+    .user_ctx = NULL
+};
+
 httpd_uri_t uri_get_style = {
     .uri = "/style.css",
     .method = HTTP_GET,
@@ -295,6 +338,7 @@ httpd_handle_t setup_server(void)
 
     if (httpd_start(&server, &config) == ESP_OK)
     {
+        httpd_register_uri_handler(server, &uri_udp_logging);
         httpd_register_uri_handler(server, &uri_post_credentials);
         httpd_register_uri_handler(server, &uri_post_limits);
         httpd_register_uri_handler(server, &uri_get_status);

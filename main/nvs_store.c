@@ -9,14 +9,20 @@
 #define AP_NAME "username"
 #define PASSWORD "password"
 #define LAST_OPMODE "last_opmode"
-int16_t cached_low_limit;
-int16_t cached_high_limit;
-int16_t cached_afterrun_seconds;
+#define UDP_SERVER "udp_server"
+#define UDP_PORT "udp_port"
+
+int16_t cached_low_limit = 0;
+int16_t cached_high_limit = 0;
+int16_t cached_afterrun_seconds = 0;
+int16_t cached_udp_port = 0;
 
 char cached_ap_name[30];
 char cached_password[30];
+char cached_udp_server[20];
 
-int16_t cached_lastOpmode;
+
+int16_t cached_lastOpmode = 0;
 
 static const char* TAG = "STORE";
 
@@ -65,13 +71,15 @@ void store_start() {
         readInt(HIGH_LIMIT, &cached_high_limit);
         readInt(AFTERRUN_SECONDS, &cached_afterrun_seconds);
         readInt(LAST_OPMODE, &cached_lastOpmode);
+        readInt(UDP_PORT, &cached_udp_port);
 
         readString(AP_NAME, cached_ap_name, "");
         readString(PASSWORD, cached_password, "");
-
+        readString(UDP_SERVER, cached_udp_server, "");
 
         ESP_LOGI(TAG, "Read lower [%d] and higher [%d] with afterrun [%d]", cached_low_limit, cached_high_limit, cached_afterrun_seconds);
         ESP_LOGI(TAG, "Read user [%s] with password [%s]", cached_ap_name, cached_password);
+        ESP_LOGI(TAG, "Read UDP log server [%s] with port [%d]", cached_udp_server, cached_udp_port);
         ESP_LOGI(TAG, "Read last OpMode as [%s]", OpModeStr[cached_lastOpmode]);
     }        
 }
@@ -121,4 +129,20 @@ void store_save_last_op_mode(enum OpMode opMode) {
 
 enum OpMode store_read_last_op_mode() {
     return (enum OpMode) cached_lastOpmode;
+}
+
+char* store_read_udp_server() {
+    return cached_udp_server;
+}
+
+uint16_t store_read_udp_port() {
+    return cached_udp_port;
+}
+
+void store_set_udp_server(char* server, uint16_t port) {
+    writeInt(UDP_PORT, port);
+    writeString(UDP_SERVER, server);
+    strcpy(cached_udp_server, server);
+    cached_udp_port = port;
+    nvs_commit(my_handle);
 }

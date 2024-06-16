@@ -39,7 +39,7 @@ int logging_vprintf( const char *fmt, va_list l ) {
 		// Send MessageBuffer
 		size_t sended = xMessageBufferSendFromISR(xMessageBufferTrans, &buffer, buffer_len, &xHigherPriorityTaskWoken);
 		//printf("logging_vprintf sended=%d\n",sended);
-		assert(sended == buffer_len);
+		//assert(sended == buffer_len);
 #endif
 	}
 
