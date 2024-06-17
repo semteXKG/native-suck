@@ -166,6 +166,7 @@ void handle_credentials(char* buffer) {
 
 void handle_udp_logging(char* buffer) {
     char *outer, *inner;    
+    outer = buffer;
     char* token = strtok_r(buffer, "&", &outer);
     char udp_server[50];
     char udp_port[50];
@@ -175,25 +176,26 @@ void handle_udp_logging(char* buffer) {
     while(token != NULL) {
         ESP_LOGI(TAG, "PRE-key w token %s", token);
         inner = token;
-        char *key_value_pair = strtok_r(token, "=", &inner);
-        ESP_LOGI(TAG, "Key:: %s", outer);
+        char key_value_pair[100];
+        char* value;
 
-        if(strcmp(key_value_pair, "udp_server") == 0) {
-            if (token[strlen(token)-1] == '=') {
-                key_value_pair = "";
-            } else {
-                key_value_pair = strtok_r(NULL, "=", &inner);
+        strcpy(key_value_pair, token);
+        char *key = strtok_r(key_value_pair, "=", &inner);
+        ESP_LOGI(TAG, "Passed = splitter");
+        if(strcmp(key, "udp_server") == 0) {
+            char* value = strtok_r(NULL, "=", &inner);
+            if (value == NULL) {
+                value = "";
             }
-            strcpy(udp_server, key_value_pair);
-        } else if (strcmp(key_value_pair, "udp_port") == 0) {
+            strcpy(udp_server, value);
+        } else if (strcmp(key, "udp_port") == 0) {
             ESP_LOGI(TAG, "UDP pre value");
-            key_value_pair = strtok_r(NULL, "=", &inner);
-            ESP_LOGI(TAG, "UDP post value %s", key_value_pair);
-            strcpy(udp_port, key_value_pair);
+            value = strtok_r(NULL, "=", &inner);
+            ESP_LOGI(TAG, "UDP post value %s", value);
+            strcpy(udp_port, value);
+            ESP_LOGI(TAG, "UDP post copy %s", udp_port);
         }
-        ESP_LOGI(TAG, "Outer: %s", outer);
         token = strtok_r(NULL, "&", &outer);
-        ESP_LOGI(TAG, "Outer - after: %s", token);
     }
 
     store_set_udp_server(udp_server, atoi(udp_port));
@@ -201,21 +203,27 @@ void handle_udp_logging(char* buffer) {
 }
 
 esp_err_t post_handler(httpd_req_t * req) {
-    char content[100];
+    char* content = malloc(sizeof(char)*1000);
+    char* single_message = malloc(sizeof(char)*100);
+    int offset = 0;
+    memset(content, 0, 1000);
 
     /* Truncate if content length larger than the buffer */
-    size_t recv_size = MIN(req->content_len, sizeof(content));
+    size_t recv_size = MIN(req->content_len, sizeof(single_message));
 
-    int ret = httpd_req_recv(req, content, recv_size);
-    if (ret <= 0) {  /* 0 return value indicates connection closed */
-        if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
-            httpd_resp_send_408(req);
-        }
-        return ESP_FAIL;
+    int ret = httpd_req_recv(req, single_message, recv_size);
+    while (ret != 0) {
+        ESP_LOGI(TAG, "Received %d entries, copying", ret);
+        memcpy(content + offset, single_message, ret);
+        offset = offset + ret;
+        ESP_LOGI(TAG, "New Offset: %d", offset);
+
+        ret = httpd_req_recv(req, single_message, recv_size);
     }
-    content[ret-1] = '\0';
+    
+    content[offset] = '\0';
 
-    ESP_LOGI(TAG, "Readback: %s", content);
+    ESP_LOGI(TAG, "Readback: Content - length: %d, Received %d, Content: %s", req->content_len, offset, content);
     if (strstr(req->uri, "limits")) {
         handle_limits(content);
     } else if (strstr(req->uri, "credentials")) {
@@ -224,6 +232,7 @@ esp_err_t post_handler(httpd_req_t * req) {
         handle_udp_logging(content);
     } 
 
+    free(content);
     /* Send a simple response */
     httpd_resp_set_status(req, "302 Temporary Redirect");
     httpd_resp_set_hdr(req, "Location", "/index.html");
